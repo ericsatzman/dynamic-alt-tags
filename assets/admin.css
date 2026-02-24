@@ -1,0 +1,8 @@
+.ai-alt-wrap .ai-alt-table td {
+	vertical-align: top;
+}
+
+.ai-alt-wrap .ai-alt-table input[type="text"] {
+	width: 100%;
+	max-width: 420px;
+}
