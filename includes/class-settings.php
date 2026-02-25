@@ -180,13 +180,40 @@ class WPAI_Alt_Text_Settings {
 			$type = 'number';
 			$step = ' step="0.01" min="0" max="1"';
 		}
+		if ( 'cloudflare_token' === $id ) {
+			$type = 'password';
+		}
+
+		$field_id = 'ai-alt-field-' . sanitize_html_class( $id );
+
+		if ( 'cloudflare_token' === $id ) {
+			printf(
+				'<input id="%1$s" class="regular-text" type="%2$s" name="%3$s" value="%4$s" autocomplete="off" />',
+				esc_attr( $field_id ),
+				esc_attr( $type ),
+				esc_attr( $name ),
+				esc_attr( (string) $options[ $id ] )
+			);
+			printf(
+				' <button type="button" class="button ai-alt-toggle-token" data-target="%1$s" data-show-label="%2$s" data-hide-label="%3$s" aria-pressed="false">%2$s</button>',
+				esc_attr( $field_id ),
+				esc_attr__( 'Show', 'dynamic-alt-tags' ),
+				esc_attr__( 'Hide', 'dynamic-alt-tags' )
+			);
+			return;
+		}
 
 		printf(
-			'<input class="regular-text" type="%1$s" name="%2$s" value="%3$s"%4$s />',
+			'<input id="%1$s" class="regular-text" type="%2$s" name="%3$s" value="%4$s"%5$s />',
+			esc_attr( $field_id ),
 			esc_attr( $type ),
 			esc_attr( $name ),
 			esc_attr( (string) $options[ $id ] ),
 			$step // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		);
+
+		if ( 'cloudflare_account' === $id ) {
+			echo '<p class="description">' . esc_html__( 'Optional. Currently not used by this plugin when calling your Worker URL directly.', 'dynamic-alt-tags' ) . '</p>';
+		}
 	}
 }

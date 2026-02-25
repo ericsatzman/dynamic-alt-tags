@@ -184,6 +184,56 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
+	 * Test provider connection.
+	 *
+	 * @return void
+	 */
+	public function handle_test_connection() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
+		}
+
+		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
+
+		$provider = new WPAI_Alt_Text_Provider_Cloudflare( $this->settings );
+		$result   = $provider->generate_caption(
+			'https://s.w.org/style/images/about/WordPress-logotype-wmark.png',
+			array(
+				'attachment_title' => 'WordPress logo',
+				'post_title'       => 'Provider test',
+			)
+		);
+
+		$status  = 'success';
+		$message = __( 'Provider connection succeeded.', 'dynamic-alt-tags' );
+
+		if ( is_wp_error( $result ) ) {
+			$status  = 'error';
+			$message = sprintf(
+				/* translators: %s error message */
+				__( 'Provider connection failed: %s', 'dynamic-alt-tags' ),
+				$result->get_error_message()
+			);
+		} elseif ( ! is_array( $result ) || empty( $result['caption'] ) ) {
+			$status  = 'error';
+			$message = __( 'Provider responded, but did not return a usable caption.', 'dynamic-alt-tags' );
+		}
+
+		$redirect = add_query_arg(
+			array(
+				'page'        => 'ai-alt-text-settings',
+				'notice'      => 'provider_test',
+				'test_status' => rawurlencode( $status ),
+				'test_msg'    => rawurlencode( $message ),
+			),
+			admin_url( 'upload.php' )
+		);
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
 	 * Handle queue actions.
 	 *
 	 * @return void
@@ -193,17 +243,84 @@ class WPAI_Alt_Text_Admin {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
-		$row_id = isset( $_POST['row_id'] ) ? absint( $_POST['row_id'] ) : 0;
-		$action = isset( $_POST['queue_action'] ) ? sanitize_key( wp_unslash( $_POST['queue_action'] ) ) : '';
+		check_admin_referer( 'ai_alt_queue_action', 'ai_alt_queue_nonce' );
 
-		if ( ! $row_id || ! in_array( $action, array( 'approve', 'reject', 'skip' ), true ) ) {
-			wp_die( esc_html__( 'Invalid request.', 'dynamic-alt-tags' ) );
+		$allowed_actions = array( 'approve', 'reject', 'skip' );
+		$updated_count   = 0;
+
+		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
+		if ( '' !== $single_action ) {
+			$parts = explode( '|', $single_action );
+			if ( 2 !== count( $parts ) ) {
+				wp_die( esc_html__( 'Invalid request.', 'dynamic-alt-tags' ) );
+			}
+
+			$action = sanitize_key( $parts[0] );
+			$row_id = absint( $parts[1] );
+			if ( ! $row_id || ! in_array( $action, $allowed_actions, true ) ) {
+				wp_die( esc_html__( 'Invalid request.', 'dynamic-alt-tags' ) );
+			}
+
+			$alts = isset( $_POST['bulk_final_alt'] ) && is_array( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array();
+			$alt  = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
+			$this->apply_queue_action( $row_id, $action, $alt );
+			$updated_count = 1;
+		} else {
+			$bulk_action = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
+			if ( '' === $bulk_action || '-1' === $bulk_action ) {
+				$bulk_action = isset( $_POST['bulk_action2'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action2'] ) ) : '';
+			}
+
+			if ( ! in_array( $bulk_action, $allowed_actions, true ) ) {
+				wp_die( esc_html__( 'Invalid request.', 'dynamic-alt-tags' ) );
+			}
+
+			$selected_ids = isset( $_POST['selected_row_ids'] ) && is_array( $_POST['selected_row_ids'] ) ? $_POST['selected_row_ids'] : array();
+			$selected_ids = array_values( array_filter( array_map( 'absint', $selected_ids ) ) );
+			if ( empty( $selected_ids ) ) {
+				wp_die( esc_html__( 'No queue items selected.', 'dynamic-alt-tags' ) );
+			}
+
+			$alts = isset( $_POST['bulk_final_alt'] ) && is_array( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array();
+			foreach ( $selected_ids as $row_id ) {
+				$alt = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
+				$this->apply_queue_action( $row_id, $bulk_action, $alt );
+				++$updated_count;
+			}
 		}
 
-		check_admin_referer( 'ai_alt_queue_action_' . $row_id, 'ai_alt_queue_nonce' );
+		$redirect = add_query_arg(
+			array(
+				'page'    => 'ai-alt-text-queue',
+				'notice'  => 'queue_updated',
+				'updated' => $updated_count,
+			),
+			admin_url( 'upload.php' )
+		);
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Apply one queue action.
+	 *
+	 * @param int    $row_id Queue row ID.
+	 * @param string $action Action key.
+	 * @param string $alt Alt text.
+	 * @return void
+	 */
+	private function apply_queue_action( $row_id, $action, $alt ) {
+		$row_id = absint( $row_id );
+		if ( ! $row_id ) {
+			return;
+		}
 
 		if ( 'approve' === $action ) {
-			$alt = isset( $_POST['final_alt'] ) ? sanitize_text_field( wp_unslash( $_POST['final_alt'] ) ) : '';
+			if ( '' === trim( (string) $alt ) ) {
+				$row = $this->queue_repo->get_row( $row_id );
+				$alt = is_array( $row ) && isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
+			}
 			$this->processor->approve_row( $row_id, $alt );
 		} elseif ( 'reject' === $action ) {
 			$this->queue_repo->mark_final( $row_id, 'rejected', '' );
@@ -215,16 +332,5 @@ class WPAI_Alt_Text_Admin {
 			}
 			$this->queue_repo->mark_final( $row_id, 'skipped', '' );
 		}
-
-		$redirect = add_query_arg(
-			array(
-				'page'   => 'ai-alt-text-queue',
-				'notice' => 'queue_updated',
-			),
-			admin_url( 'upload.php' )
-		);
-
-		wp_safe_redirect( $redirect );
-		exit;
 	}
 }

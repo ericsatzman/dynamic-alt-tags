@@ -110,6 +110,7 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 		add_action( 'admin_post_ai_alt_run_backfill', array( $this->admin, 'handle_run_backfill' ) );
 		add_action( 'admin_post_ai_alt_process_now', array( $this->admin, 'handle_process_now' ) );
+		add_action( 'admin_post_ai_alt_test_connection', array( $this->admin, 'handle_test_connection' ) );
 		add_action( 'admin_post_ai_alt_queue_action', array( $this->admin, 'handle_queue_action' ) );
 
 		add_action( 'rest_api_init', array( $this->rest, 'register_routes' ) );

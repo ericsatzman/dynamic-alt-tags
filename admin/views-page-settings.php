@@ -38,6 +38,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	<?php endif; ?>
 
+	<?php if ( isset( $_GET['notice'] ) && 'provider_test' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
+		<?php
+		$test_status = isset( $_GET['test_status'] ) ? sanitize_key( rawurldecode( wp_unslash( $_GET['test_status'] ) ) ) : 'success';
+		$test_msg    = isset( $_GET['test_msg'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['test_msg'] ) ) ) : '';
+		$notice_cls  = 'success' === $test_status ? 'notice-success' : 'notice-error';
+		?>
+		<div class="notice <?php echo esc_attr( $notice_cls ); ?> is-dismissible">
+			<p><?php echo esc_html( $test_msg ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<form method="post" action="options.php">
 		<?php
 		settings_fields( 'ai_alt_text_options_group' );
@@ -61,5 +72,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<input type="hidden" name="action" value="ai_alt_process_now" />
 		<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 		<?php submit_button( __( 'Process Queue Now', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
+	</form>
+
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-left:8px;">
+		<input type="hidden" name="action" value="ai_alt_test_connection" />
+		<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
+		<?php submit_button( __( 'Test Provider Connection', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
 	</form>
 </div>
