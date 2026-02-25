@@ -86,6 +86,7 @@ $max_pages = max( 1, (int) ceil( $total / $per_page ) );
 						$confidence    = isset( $row['confidence'] ) ? (float) $row['confidence'] : 0.0;
 						$suggested     = isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
 						$thumb         = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
+						$image_url     = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
 						?>
 						<tr>
 							<th scope="row" class="check-column">
@@ -104,6 +105,9 @@ $max_pages = max( 1, (int) ceil( $total / $per_page ) );
 							<td>
 								<button class="button button-primary" type="submit" name="single_action" value="<?php echo esc_attr( 'approve|' . $row_id ); ?>"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></button>
 								<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'reject|' . $row_id ); ?>"><?php esc_html_e( 'Reject', 'dynamic-alt-tags' ); ?></button>
+								<?php if ( ! empty( $image_url ) ) : ?>
+									<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>
+								<?php endif; ?>
 								<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'skip|' . $row_id ); ?>"><?php esc_html_e( 'Skip decorative', 'dynamic-alt-tags' ); ?></button>
 							</td>
 						</tr>
