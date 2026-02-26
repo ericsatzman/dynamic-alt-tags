@@ -241,26 +241,28 @@ class WPAI_Alt_Text_Plugin {
 			return $form_fields;
 		}
 
-		$row = $this->queue_repo->get_row_by_attachment( $attachment_id );
-		if ( ! is_array( $row ) ) {
-			return $form_fields;
+		$row          = $this->queue_repo->get_row_by_attachment( $attachment_id );
+		$has_row      = is_array( $row );
+		$status       = $has_row && isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : 'not_queued';
+		$suggested_alt = $has_row && isset( $row['suggested_alt'] ) ? sanitize_text_field( (string) $row['suggested_alt'] ) : '';
+		$final_alt     = $has_row && isset( $row['final_alt'] ) ? sanitize_text_field( (string) $row['final_alt'] ) : '';
+		$error_message = $has_row && isset( $row['error_message'] ) ? sanitize_text_field( (string) $row['error_message'] ) : '';
+
+		if ( $has_row ) {
+			$action_options = array(
+				''         => __( 'Choose action', 'dynamic-alt-tags' ),
+				'approve'  => __( 'Approve', 'dynamic-alt-tags' ),
+				'reject'   => __( 'Reject', 'dynamic-alt-tags' ),
+				'skip'     => __( 'Skip Image', 'dynamic-alt-tags' ),
+				'custom'   => __( 'Use Custom Alt Text', 'dynamic-alt-tags' ),
+			);
+		} else {
+			$action_options = array(
+				''         => __( 'Choose action', 'dynamic-alt-tags' ),
+				'generate' => __( 'Generate Suggestion', 'dynamic-alt-tags' ),
+				'custom'   => __( 'Use Custom Alt Text', 'dynamic-alt-tags' ),
+			);
 		}
-
-		$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
-		if ( ! in_array( $status, array( 'generated', 'failed' ), true ) ) {
-			return $form_fields;
-		}
-
-		$suggested_alt = isset( $row['suggested_alt'] ) ? sanitize_text_field( (string) $row['suggested_alt'] ) : '';
-		$error_message = isset( $row['error_message'] ) ? sanitize_text_field( (string) $row['error_message'] ) : '';
-
-		$action_options = array(
-			''        => __( 'Choose action', 'dynamic-alt-tags' ),
-			'approve' => __( 'Approve Suggested Alt', 'dynamic-alt-tags' ),
-			'reject'  => __( 'Reject', 'dynamic-alt-tags' ),
-			'skip'    => __( 'Skip Image', 'dynamic-alt-tags' ),
-			'custom'  => __( 'Use Custom Alt Text', 'dynamic-alt-tags' ),
-		);
 
 		$options_html = '';
 		foreach ( $action_options as $value => $label ) {
@@ -272,21 +274,30 @@ class WPAI_Alt_Text_Plugin {
 		}
 
 		$review_html = '';
-		if ( 'generated' === $status ) {
+		if ( '' !== $status ) {
+			$review_html .= '<p><strong>' . esc_html__( 'Status:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $status ) . '</p>';
+		}
+		if ( '' !== $suggested_alt ) {
 			$review_html .= '<p><strong>' . esc_html__( 'Suggested Alt:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $suggested_alt ) . '</p>';
 		}
-		if ( 'failed' === $status && '' !== $error_message ) {
+		if ( '' !== $final_alt ) {
+			$review_html .= '<p><strong>' . esc_html__( 'Final Alt:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $final_alt ) . '</p>';
+		}
+		if ( '' !== $error_message ) {
 			$review_html .= '<p><strong>' . esc_html__( 'Generation Error:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $error_message ) . '</p>';
 		}
 		$review_html .= '<p><label>' . esc_html__( 'Action', 'dynamic-alt-tags' ) . '<br />';
 		$review_html .= '<select class="ai-alt-upload-action" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '" name="attachments[' . esc_attr( (string) $attachment_id ) . '][ai_alt_action]">' . $options_html . '</select>';
-		$review_html .= '<input type="button" class="button ai-alt-upload-apply" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '" value="' . esc_attr__( 'Apply', 'dynamic-alt-tags' ) . '" />';
 		$review_html .= '</label></p>';
 		$review_html .= '<p><label>' . esc_html__( 'Custom Alt Text', 'dynamic-alt-tags' ) . '<br />';
 		$review_html .= '<input type="text" class="widefat ai-alt-upload-custom-alt" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" name="attachments[' . esc_attr( (string) $attachment_id ) . '][ai_alt_custom_alt]" value="" />';
 		$review_html .= '</label></p>';
+		$review_html .= '<p class="ai-alt-upload-apply-row"><input type="button" class="button ai-alt-upload-apply" style="display:none;" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '" value="' . esc_attr__( 'Apply', 'dynamic-alt-tags' ) . '" /></p>';
 		$review_html .= '<p class="description ai-alt-upload-action-result" aria-live="polite"></p>';
 		$review_html .= '<p class="description">' . esc_html__( 'Choose an action to finalize this uploaded image suggestion.', 'dynamic-alt-tags' ) . '</p>';
+		if ( ! $has_row ) {
+			$review_html .= '<p class="description">' . esc_html__( 'This image does not have a queue item yet. Use Generate Suggestion to create one.', 'dynamic-alt-tags' ) . '</p>';
+		}
 
 		$form_fields['ai_alt_review'] = array(
 			'label' => __( 'Dynamic Alt Tags Review', 'dynamic-alt-tags' ),
@@ -319,7 +330,7 @@ class WPAI_Alt_Text_Plugin {
 			return $post;
 		}
 
-		if ( ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom' ), true ) ) {
+		if ( ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom', 'generate' ), true ) ) {
 			return $post;
 		}
 
@@ -465,18 +476,64 @@ class WPAI_Alt_Text_Plugin {
 		$action        = sanitize_key( (string) $action );
 		$custom_alt    = sanitize_text_field( (string) $custom_alt );
 
-		if ( ! $attachment_id || ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom' ), true ) ) {
+		if ( ! $attachment_id || ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom', 'generate' ), true ) ) {
 			return array(
 				'ok' => false,
 				'message' => __( 'Invalid upload action request.', 'dynamic-alt-tags' ),
 			);
 		}
 
+		if ( 'generate' === $action ) {
+			$row_before = $this->queue_repo->get_row_by_attachment( $attachment_id );
+			if ( ! is_array( $row_before ) ) {
+				$queued = $this->queue_repo->enqueue( $attachment_id, 0 );
+				if ( ! $queued ) {
+					return array(
+						'ok' => false,
+						'message' => __( 'Unable to queue this image for generation.', 'dynamic-alt-tags' ),
+					);
+				}
+			}
+
+			$generated = $this->processor->process_attachment_for_review( $attachment_id );
+			$row_after = $this->queue_repo->get_row_by_attachment( $attachment_id );
+			$suggested = is_array( $row_after ) && isset( $row_after['suggested_alt'] ) ? sanitize_text_field( (string) $row_after['suggested_alt'] ) : '';
+			$status    = is_array( $row_after ) && isset( $row_after['status'] ) ? sanitize_key( (string) $row_after['status'] ) : '';
+
+			return array(
+				'ok'       => (bool) $generated,
+				'alt_text' => '',
+				'message'  => $generated
+					? __( 'Dynamic Alt Tags: suggestion generated. You can now approve, reject, skip, or set custom alt text.', 'dynamic-alt-tags' )
+					: __( 'Unable to generate suggestion for this image. Check provider settings/logs.', 'dynamic-alt-tags' ),
+				'status'   => $status,
+				'suggested_alt' => $suggested,
+			);
+		}
+
 		$row = $this->queue_repo->get_row_by_attachment( $attachment_id );
 		if ( ! is_array( $row ) || empty( $row['id'] ) ) {
+			if ( 'custom' === $action ) {
+				if ( '' === trim( $custom_alt ) ) {
+					return array(
+						'ok' => false,
+						'message' => __( 'Please enter custom alt text first.', 'dynamic-alt-tags' ),
+					);
+				}
+				update_post_meta( $attachment_id, '_wp_attachment_image_alt', $custom_alt );
+				update_post_meta( $attachment_id, '_ai_alt_last_generated_at', current_time( 'mysql' ) );
+				update_post_meta( $attachment_id, '_ai_alt_source_provider', 'custom' );
+				update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
+				return array(
+					'ok'       => true,
+					'alt_text' => $custom_alt,
+					'message'  => __( 'Dynamic Alt Tags: custom alt text saved and applied.', 'dynamic-alt-tags' ),
+				);
+			}
+
 			return array(
 				'ok' => false,
-				'message' => __( 'No queue item found for this image.', 'dynamic-alt-tags' ),
+				'message' => __( 'No queue item found for this image. Choose Generate Suggestion first.', 'dynamic-alt-tags' ),
 			);
 		}
 

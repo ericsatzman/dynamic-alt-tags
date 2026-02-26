@@ -38,6 +38,13 @@ $is_history = 'history' === $view;
 		</div>
 	<?php endif; ?>
 
+	<?php if ( isset( $_GET['notice'] ) && 'queue_error' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
+		<?php $queue_error_msg = isset( $_GET['queue_msg'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['queue_msg'] ) ) ) : __( 'Unable to apply bulk action.', 'dynamic-alt-tags' ); ?>
+		<div class="notice notice-error is-dismissible">
+			<p><?php echo esc_html( $queue_error_msg ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<p>
 		<?php
 		printf(

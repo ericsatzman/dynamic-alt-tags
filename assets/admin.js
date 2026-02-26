@@ -5,6 +5,9 @@
 		var selectors = [
 			'input[data-setting="alt"]',
 			'textarea[data-setting="alt"]',
+			'#attachment-details-two-column-alt-text',
+			'input#attachment_alt',
+			'textarea#attachment_alt',
 			'input[name="attachments[' + attachmentId + '][image_alt]"]',
 			'textarea[name="attachments[' + attachmentId + '][image_alt]"]'
 		];
@@ -19,6 +22,21 @@
 				}
 			});
 		});
+	}
+
+	function setUploadApplyVisibility(select) {
+		if (!(select instanceof HTMLSelectElement)) {
+			return;
+		}
+
+		var container = select.closest('tr, .compat-field, .setting, .attachment-details');
+		var applyButton = container ? container.querySelector('.ai-alt-upload-apply') : null;
+		if (!(applyButton instanceof HTMLButtonElement) && !(applyButton instanceof HTMLInputElement)) {
+			return;
+		}
+
+		var isCustom = String(select.value || '') === 'custom';
+		applyButton.style.display = isCustom ? 'inline-block' : 'none';
 	}
 
 	function applyUploadAction(trigger, select, customInput, resultNode) {
@@ -52,7 +70,7 @@
 		}
 
 		var customAlt = '';
-		if (customInput instanceof HTMLInputElement) {
+		if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
 			customAlt = String(customInput.value || '');
 		}
 		if (reviewAction === 'custom' && !customAlt.trim()) {
@@ -105,14 +123,13 @@
 				var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 				if (container instanceof HTMLElement) {
 					setAltFieldValue(container, altText, attachmentId);
-				} else {
-					setAltFieldValue(document, altText, attachmentId);
 				}
+				setAltFieldValue(document, altText, attachmentId);
 
-				select.value = '';
-				if (customInput instanceof HTMLInputElement) {
+				if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
 					customInput.value = '';
 				}
+				setUploadApplyVisibility(select);
 			})
 			.catch(function () {
 				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
@@ -181,9 +198,9 @@
 					if (!(select instanceof HTMLSelectElement)) {
 						select = document.querySelector('select.ai-alt-upload-action[name="attachments[' + attachmentId + '][ai_alt_action]"]');
 				}
-				if (!(customInput instanceof HTMLInputElement)) {
-					customInput = document.querySelector('input.ai-alt-upload-custom-alt[name="attachments[' + attachmentId + '][ai_alt_custom_alt]"]');
-				}
+					if (!(customInput instanceof HTMLInputElement) && !(customInput instanceof HTMLTextAreaElement)) {
+						customInput = document.querySelector('input.ai-alt-upload-custom-alt[name="attachments[' + attachmentId + '][ai_alt_custom_alt]"]');
+					}
 				if (!(resultNode instanceof HTMLElement)) {
 					resultNode = document.querySelector('.ai-alt-upload-action-result');
 				}
@@ -204,12 +221,16 @@
 			return;
 		}
 
-		var isUploadActionSelect = target instanceof HTMLSelectElement && (target.classList.contains('ai-alt-upload-action') || /\[ai_alt_action\]$/.test(String(target.name || '')));
-		if (isUploadActionSelect) {
-			var actionValue = String(target.value || '');
-			if (!actionValue) {
-				return;
-			}
+			var isUploadActionSelect = target instanceof HTMLSelectElement && (target.classList.contains('ai-alt-upload-action') || /\[ai_alt_action\]$/.test(String(target.name || '')));
+			if (isUploadActionSelect) {
+				var actionValue = String(target.value || '');
+				setUploadApplyVisibility(target);
+				if (!actionValue) {
+					return;
+				}
+				if (actionValue === 'custom') {
+					return;
+				}
 
 			var container = target.closest('tr, .compat-field, .setting, .attachment-details');
 			var applyButton = container ? container.querySelector('.ai-alt-upload-apply') : null;
@@ -220,13 +241,46 @@
 
 			var customInput = container ? container.querySelector('.ai-alt-upload-custom-alt') : null;
 			var resultNode = container ? container.querySelector('.ai-alt-upload-action-result') : null;
-			if (!(customInput instanceof HTMLInputElement)) {
+			if (!(customInput instanceof HTMLInputElement) && !(customInput instanceof HTMLTextAreaElement)) {
 				customInput = document.querySelector('input.ai-alt-upload-custom-alt[name="attachments[' + String(target.getAttribute('data-attachment-id') || '') + '][ai_alt_custom_alt]"]');
 			}
 			if (!(resultNode instanceof HTMLElement)) {
 				resultNode = document.querySelector('.ai-alt-upload-action-result');
 			}
-			applyUploadAction(target, target, customInput, resultNode);
+				applyUploadAction(target, target, customInput, resultNode);
+			}
+		});
+
+	document.addEventListener('DOMContentLoaded', function () {
+		var selects = document.querySelectorAll('select.ai-alt-upload-action');
+		selects.forEach(function (select) {
+			if (select instanceof HTMLSelectElement) {
+				setUploadApplyVisibility(select);
+			}
+		});
+
+		// Make admin notices one-time by removing notice query args after render.
+		if (window.history && typeof window.history.replaceState === 'function') {
+			var url = new URL(window.location.href);
+			var noticeParams = [
+				'notice',
+				'processed',
+				'enqueued',
+				'updated',
+				'test_status',
+				'test_msg',
+				'queue_msg'
+			];
+			var changed = false;
+			noticeParams.forEach(function (key) {
+				if (url.searchParams.has(key)) {
+					url.searchParams.delete(key);
+					changed = true;
+				}
+			});
+			if (changed) {
+				window.history.replaceState({}, document.title, url.toString());
+			}
 		}
 	});
 

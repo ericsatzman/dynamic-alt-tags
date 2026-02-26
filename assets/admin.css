@@ -33,6 +33,10 @@
 	color: #b32d2e;
 }
 
+.ai-alt-upload-apply-row {
+	margin-top: 8px;
+}
+
 .ai-alt-upload-apply {
-	margin-left: 8px;
+	line-height: 1;
 }

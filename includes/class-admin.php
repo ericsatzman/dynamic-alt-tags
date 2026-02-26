@@ -320,7 +320,17 @@ class WPAI_Alt_Text_Admin {
 			}
 
 			if ( ! in_array( $bulk_action, $allowed_actions, true ) ) {
-				wp_die( esc_html__( 'Invalid request.', 'dynamic-alt-tags' ) );
+				$redirect = add_query_arg(
+					array(
+						'page'      => 'ai-alt-text-queue',
+						'notice'    => 'queue_error',
+						'queue_msg' => rawurlencode( __( 'Please select a bulk action before clicking Apply.', 'dynamic-alt-tags' ) ),
+					),
+					admin_url( 'upload.php' )
+				);
+
+				wp_safe_redirect( $redirect );
+				exit;
 			}
 
 			$selected_ids = isset( $_POST['selected_row_ids'] ) && is_array( $_POST['selected_row_ids'] ) ? $_POST['selected_row_ids'] : array();
