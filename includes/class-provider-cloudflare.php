@@ -84,7 +84,81 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		$data = json_decode( $body, true );
 
 		if ( $code < 200 || $code >= 300 ) {
-			return new WP_Error( 'ai_alt_provider_http_error', sprintf( 'Provider returned HTTP %d', (int) $code ) );
+			$detail = '';
+			$fetch_url = esc_url_raw( $image_url );
+			$fetch_status = 0;
+
+			if ( is_array( $data ) ) {
+				if ( isset( $data['error'] ) ) {
+					$detail = (string) $data['error'];
+				} elseif ( isset( $data['message'] ) ) {
+					$detail = (string) $data['message'];
+				}
+
+				$url_keys = array( 'fetch_url', 'image_url', 'url' );
+				foreach ( $url_keys as $url_key ) {
+					if ( isset( $data[ $url_key ] ) && is_string( $data[ $url_key ] ) && '' !== trim( $data[ $url_key ] ) ) {
+						$fetch_url = esc_url_raw( (string) $data[ $url_key ] );
+						break;
+					}
+				}
+
+				$status_keys = array( 'fetch_status', 'upstream_status', 'status', 'status_code', 'http_status' );
+				foreach ( $status_keys as $status_key ) {
+					if ( isset( $data[ $status_key ] ) ) {
+						$candidate = absint( $data[ $status_key ] );
+						if ( $candidate > 0 ) {
+							$fetch_status = $candidate;
+							break;
+						}
+					}
+				}
+			}
+
+			if ( '' === trim( $detail ) && is_string( $body ) && '' !== trim( $body ) ) {
+				$detail = wp_strip_all_tags( $body );
+			}
+
+			$detail = trim( preg_replace( '/\s+/', ' ', (string) $detail ) );
+			$parts  = array();
+			if ( '' !== $detail ) {
+				$parts[] = sanitize_text_field( substr( $detail, 0, 220 ) );
+			}
+			if ( $fetch_status > 0 ) {
+				$parts[] = sprintf(
+					/* translators: %d upstream status code */
+					__( 'upstream status %d', 'dynamic-alt-tags' ),
+					$fetch_status
+				);
+			}
+			if ( '' !== $fetch_url ) {
+				$parts[] = sprintf(
+					/* translators: %s image fetch URL */
+					__( 'image URL: %s', 'dynamic-alt-tags' ),
+					$fetch_url
+				);
+			}
+
+			if ( ! empty( $parts ) ) {
+				return new WP_Error(
+					'ai_alt_provider_http_error',
+					sprintf(
+						/* translators: 1: HTTP status code, 2: provider error detail */
+						__( 'Provider returned HTTP %1$d: %2$s', 'dynamic-alt-tags' ),
+						(int) $code,
+						implode( '; ', $parts )
+					)
+				);
+			}
+
+			return new WP_Error(
+				'ai_alt_provider_http_error',
+				sprintf(
+					/* translators: %d HTTP status code */
+					__( 'Provider returned HTTP %d', 'dynamic-alt-tags' ),
+					(int) $code
+				)
+			);
 		}
 
 		if ( ! is_array( $data ) ) {

@@ -10,6 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class WPAI_Alt_Text_Admin {
+	/**
+	 * Option key for latest connection check.
+	 *
+	 * @var string
+	 */
+	const CONNECTION_STATUS_OPTION_KEY = 'ai_alt_text_connection_status';
+
 
 	/**
 	 * Settings.
@@ -126,6 +133,8 @@ class WPAI_Alt_Text_Admin {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'dynamic-alt-tags' ) );
 		}
 
+		$connection_status = $this->get_connection_status();
+
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-settings.php';
 	}
 
@@ -188,17 +197,31 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
 
-		$options   = $this->settings->get_options();
+		$options = $this->settings->get_options();
+		$before  = $this->queue_repo->get_active_status_counts();
 		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
+		$after   = $this->queue_repo->get_active_status_counts();
 
-		$redirect = add_query_arg(
-			array(
-				'page'      => 'ai-alt-text-settings',
-				'notice'    => 'process_done',
-				'processed' => $processed,
-			),
-			admin_url( 'upload.php' )
-		);
+		if ( $processed > 0 ) {
+			$redirect = add_query_arg(
+				array(
+					'page'      => 'ai-alt-text-settings',
+					'notice'    => 'process_done',
+					'processed' => $processed,
+				),
+				admin_url( 'upload.php' )
+			);
+		} else {
+			$message  = $this->get_zero_processed_message( $before, $after );
+			$redirect = add_query_arg(
+				array(
+					'page'        => 'ai-alt-text-settings',
+					'notice'      => 'process_error',
+					'process_msg' => rawurlencode( $message ),
+				),
+				admin_url( 'upload.php' )
+			);
+		}
 
 		wp_safe_redirect( $redirect );
 		exit;
@@ -221,14 +244,71 @@ class WPAI_Alt_Text_Admin {
 
 		check_ajax_referer( 'ai_alt_process_now_ajax' );
 
-		$options   = $this->settings->get_options();
+		$options = $this->settings->get_options();
+		$before  = $this->queue_repo->get_active_status_counts();
 		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
+		$after   = $this->queue_repo->get_active_status_counts();
+		$message = '';
+
+		if ( $processed <= 0 ) {
+			$message = $this->get_zero_processed_message( $before, $after );
+		}
 
 		wp_send_json_success(
 			array(
 				'processed' => $processed,
+				'message'   => $message,
 			)
 		);
+	}
+
+	/**
+	 * Build diagnostic message when processing returns zero.
+	 *
+	 * @param array<string,int> $before Status counts before run.
+	 * @param array<string,int> $after Status counts after run.
+	 * @return string
+	 */
+	private function get_zero_processed_message( $before, $after ) {
+		$queued_before     = isset( $before['queued'] ) ? absint( $before['queued'] ) : 0;
+		$failed_before     = isset( $before['failed'] ) ? absint( $before['failed'] ) : 0;
+		$generated_before  = isset( $before['generated'] ) ? absint( $before['generated'] ) : 0;
+		$processing_before = isset( $before['processing'] ) ? absint( $before['processing'] ) : 0;
+
+		$queued_after     = isset( $after['queued'] ) ? absint( $after['queued'] ) : 0;
+		$failed_after     = isset( $after['failed'] ) ? absint( $after['failed'] ) : 0;
+		$generated_after  = isset( $after['generated'] ) ? absint( $after['generated'] ) : 0;
+		$processing_after = isset( $after['processing'] ) ? absint( $after['processing'] ) : 0;
+
+		if ( 0 === $queued_before && 0 === $failed_before && 0 === $generated_before && 0 === $processing_before ) {
+			return __( 'No queue items were available to process.', 'dynamic-alt-tags' );
+		}
+
+		if ( 0 === $queued_before && 0 === $failed_before && $generated_before > 0 ) {
+			return __( 'No items were processed because active items are already generated and waiting for review.', 'dynamic-alt-tags' );
+		}
+
+		if ( 0 === $queued_before && 0 === $failed_before && $processing_before > 0 ) {
+			return __( 'No items were processed because queue jobs are currently locked in processing. Try again shortly.', 'dynamic-alt-tags' );
+		}
+
+		$latest_failed = $this->queue_repo->get_latest_failed_row();
+		if ( is_array( $latest_failed ) ) {
+			$error_message = isset( $latest_failed['error_message'] ) ? sanitize_text_field( (string) $latest_failed['error_message'] ) : '';
+			if ( '' !== $error_message ) {
+				return sprintf(
+					/* translators: %s provider error detail */
+					__( 'No images were processed. Latest provider error: %s', 'dynamic-alt-tags' ),
+					$error_message
+				);
+			}
+		}
+
+		if ( $queued_after < $queued_before && $failed_after === $failed_before ) {
+			return __( 'No items were processed because claimed queue items were skipped (for example, existing alt text already present).', 'dynamic-alt-tags' );
+		}
+
+		return __( 'No items were processed. Check queue item status and provider connectivity details.', 'dynamic-alt-tags' );
 	}
 
 	/**
@@ -243,6 +323,8 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
 
+		$status   = 'success';
+		$messages = array();
 		$provider = new WPAI_Alt_Text_Provider_Cloudflare( $this->settings );
 		$result   = $provider->generate_caption(
 			'https://s.w.org/style/images/about/WordPress-logotype-wmark.png',
@@ -252,20 +334,66 @@ class WPAI_Alt_Text_Admin {
 			)
 		);
 
-		$status  = 'success';
-		$message = __( 'Provider connection succeeded.', 'dynamic-alt-tags' );
-
 		if ( is_wp_error( $result ) ) {
-			$status  = 'error';
-			$message = sprintf(
+			$status     = 'error';
+			$messages[] = sprintf(
 				/* translators: %s error message */
-				__( 'Provider connection failed: %s', 'dynamic-alt-tags' ),
+				__( 'Baseline test failed: %s', 'dynamic-alt-tags' ),
 				$result->get_error_message()
 			);
 		} elseif ( ! is_array( $result ) || empty( $result['caption'] ) ) {
-			$status  = 'error';
-			$message = __( 'Provider responded, but did not return a usable caption.', 'dynamic-alt-tags' );
+			$status     = 'error';
+			$messages[] = __( 'Baseline test failed: provider responded without a usable caption.', 'dynamic-alt-tags' );
+		} else {
+			$messages[] = __( 'Baseline test succeeded.', 'dynamic-alt-tags' );
 		}
+
+		$row = $this->queue_repo->get_latest_active_row();
+		if ( ! is_array( $row ) || empty( $row['attachment_id'] ) ) {
+			$messages[] = __( 'Latest queued image test skipped: no active queue item found.', 'dynamic-alt-tags' );
+		} else {
+			$attachment_id = absint( $row['attachment_id'] );
+			$image_url     = wp_get_attachment_url( $attachment_id );
+
+			if ( ! $image_url ) {
+				$status     = 'error';
+				$messages[] = __( 'Latest queued image test failed: attachment URL not found.', 'dynamic-alt-tags' );
+			} else {
+				$latest_result = $provider->generate_caption(
+					$image_url,
+					array(
+						'attachment_title' => get_the_title( $attachment_id ),
+						'post_title'       => 'Provider latest-image test',
+					)
+				);
+
+				if ( is_wp_error( $latest_result ) ) {
+					$status     = 'error';
+					$messages[] = sprintf(
+						/* translators: 1: attachment id, 2: error message */
+						__( 'Latest queued image test failed (attachment #%1$d): %2$s', 'dynamic-alt-tags' ),
+						$attachment_id,
+						$latest_result->get_error_message()
+					);
+				} elseif ( ! is_array( $latest_result ) || empty( $latest_result['caption'] ) ) {
+					$status     = 'error';
+					$messages[] = sprintf(
+						/* translators: %d attachment id */
+						__( 'Latest queued image test failed (attachment #%d): no usable caption returned.', 'dynamic-alt-tags' ),
+						$attachment_id
+					);
+				} else {
+					$messages[] = sprintf(
+						/* translators: %d attachment id */
+						__( 'Latest queued image test succeeded (attachment #%d).', 'dynamic-alt-tags' ),
+						$attachment_id
+					);
+				}
+			}
+		}
+
+		$message = implode( ' ', $messages );
+		$this->record_connection_check( $status, $message );
 
 		$redirect = add_query_arg(
 			array(
@@ -279,6 +407,93 @@ class WPAI_Alt_Text_Admin {
 
 		wp_safe_redirect( $redirect );
 		exit;
+	}
+
+	/**
+	 * Save latest provider connection check result.
+	 *
+	 * @param string $status Test status.
+	 * @param string $message Test message.
+	 * @return void
+	 */
+	private function record_connection_check( $status, $message ) {
+		$status  = 'success' === $status ? 'success' : 'error';
+		$message = sanitize_text_field( (string) $message );
+
+		update_option(
+			self::CONNECTION_STATUS_OPTION_KEY,
+			array(
+				'status'     => $status,
+				'message'    => $message,
+				'checked_at' => current_time( 'mysql' ),
+			),
+			false
+		);
+	}
+
+	/**
+	 * Build settings connection status payload for UI.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function get_connection_status() {
+		$options = $this->settings->get_options();
+		$state   = 'unknown';
+		$title   = __( 'Not Checked', 'dynamic-alt-tags' );
+		$message = __( 'Run "Test Provider Connection" to verify connectivity.', 'dynamic-alt-tags' );
+
+		if ( empty( $options['worker_url'] ) ) {
+			$state   = 'error';
+			$title   = __( 'Not Configured', 'dynamic-alt-tags' );
+			$message = __( 'Cloudflare Worker URL is required.', 'dynamic-alt-tags' );
+		}
+
+		$saved = get_option( self::CONNECTION_STATUS_OPTION_KEY, array() );
+		if ( is_array( $saved ) && ! empty( $saved['status'] ) ) {
+			$saved_status  = 'success' === sanitize_key( (string) $saved['status'] ) ? 'success' : 'error';
+			$saved_message = isset( $saved['message'] ) ? sanitize_text_field( (string) $saved['message'] ) : '';
+
+			if ( 'success' === $saved_status ) {
+				$state = 'ok';
+				$title = __( 'Connected', 'dynamic-alt-tags' );
+				if ( '' !== $saved_message ) {
+					$message = $saved_message;
+				}
+			} else {
+				$state   = 'error';
+				$title   = __( 'Connection Error', 'dynamic-alt-tags' );
+				$message = '' !== $saved_message ? $saved_message : __( 'Provider check failed.', 'dynamic-alt-tags' );
+			}
+		}
+
+		$latest_failed = $this->queue_repo->get_latest_failed_row();
+		$queue_error   = '';
+		if ( is_array( $latest_failed ) ) {
+			$queue_error = isset( $latest_failed['error_message'] ) ? sanitize_text_field( (string) $latest_failed['error_message'] ) : '';
+			if ( '' === $queue_error && ! empty( $latest_failed['error_code'] ) ) {
+				$queue_error = sprintf(
+					/* translators: %s error code */
+					__( 'Latest queue failure code: %s', 'dynamic-alt-tags' ),
+					sanitize_key( (string) $latest_failed['error_code'] )
+				);
+			}
+			if ( '' !== $queue_error && 'error' !== $state ) {
+				$state = 'warning';
+			}
+		}
+
+		$checked_at = '';
+		if ( is_array( $saved ) && ! empty( $saved['checked_at'] ) ) {
+			$checked_at = sanitize_text_field( (string) $saved['checked_at'] );
+		}
+
+		return array(
+			'state'       => $state,
+			'title'       => $title,
+			'message'     => $message,
+			'checked_at'  => $checked_at,
+			'queue_error' => $queue_error,
+		);
 	}
 
 	/**

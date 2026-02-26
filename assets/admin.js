@@ -269,7 +269,8 @@
 				'updated',
 				'test_status',
 				'test_msg',
-				'queue_msg'
+				'queue_msg',
+				'process_msg'
 			];
 			var changed = false;
 			noticeParams.forEach(function (key) {
@@ -360,6 +361,25 @@
 				var processed = 0;
 				if (payload.data && typeof payload.data.processed !== 'undefined') {
 					processed = Number(payload.data.processed) || 0;
+				}
+				var detailMessage = '';
+				if (payload.data && payload.data.message) {
+					detailMessage = String(payload.data.message);
+				}
+
+				if (processed <= 0) {
+					progressMessage.textContent = detailMessage || (i18n.error || 'Queue processing failed. Please try again.');
+					progressMessage.classList.add('ai-alt-message-error');
+					window.setTimeout(function () {
+						var errorUrl = new URL(window.location.href);
+						errorUrl.searchParams.set('page', 'ai-alt-text-settings');
+						errorUrl.searchParams.set('notice', 'process_error');
+						if (detailMessage) {
+							errorUrl.searchParams.set('process_msg', detailMessage);
+						}
+						window.location.href = errorUrl.toString();
+					}, 300);
+					return;
 				}
 
 				var successMessage = i18n.success || 'Manual processing finished. %d items processed.';

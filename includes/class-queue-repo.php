@@ -384,4 +384,68 @@ class WPAI_Alt_Text_Queue_Repo {
 			'rows'     => is_array( $rows ) ? $rows : array(),
 		);
 	}
+
+	/**
+	 * Get latest failed queue row.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	public function get_latest_failed_row() {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			"SELECT id, attachment_id, error_code, error_message, updated_at FROM {$this->table} WHERE status = 'failed' ORDER BY updated_at DESC, id DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
+	 * Get latest row from active queue statuses.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	public function get_latest_active_row() {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			"SELECT id, attachment_id, status, updated_at FROM {$this->table} WHERE status IN ('queued', 'processing', 'generated', 'failed') ORDER BY updated_at DESC, id DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
+	 * Get counts for active queue statuses.
+	 *
+	 * @return array<string,int>
+	 */
+	public function get_active_status_counts() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			"SELECT status, COUNT(*) AS c FROM {$this->table} WHERE status IN ('queued', 'processing', 'generated', 'failed') GROUP BY status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		$counts = array(
+			'queued'     => 0,
+			'processing' => 0,
+			'generated'  => 0,
+			'failed'     => 0,
+		);
+
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
+				if ( isset( $counts[ $status ] ) ) {
+					$counts[ $status ] = isset( $row['c'] ) ? absint( $row['c'] ) : 0;
+				}
+			}
+		}
+
+		return $counts;
+	}
 }

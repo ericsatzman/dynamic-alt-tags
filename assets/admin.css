@@ -40,3 +40,41 @@
 .ai-alt-upload-apply {
 	line-height: 1;
 }
+
+.ai-alt-wrap .ai-alt-connection-status {
+	border: 1px solid #ccd0d4;
+	border-left-width: 4px;
+	border-radius: 4px;
+	background: #fff;
+	padding: 12px 14px;
+	margin: 14px 0;
+}
+
+.ai-alt-wrap .ai-alt-connection-status h2 {
+	margin-top: 0;
+	margin-bottom: 8px;
+}
+
+.ai-alt-wrap .ai-alt-connection-status p {
+	margin: 6px 0;
+}
+
+.ai-alt-wrap .ai-alt-connection-status-ok {
+	border-left-color: #00a32a;
+}
+
+.ai-alt-wrap .ai-alt-connection-status-warning {
+	border-left-color: #dba617;
+}
+
+.ai-alt-wrap .ai-alt-connection-status-error {
+	border-left-color: #d63638;
+}
+
+.ai-alt-wrap .ai-alt-connection-status-unknown {
+	border-left-color: #646970;
+}
+
+.ai-alt-wrap .ai-alt-connection-detail {
+	color: #8a2424;
+}
