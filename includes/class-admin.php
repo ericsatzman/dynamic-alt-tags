@@ -64,7 +64,7 @@ class WPAI_Alt_Text_Admin {
 			'upload.php',
 			__( 'Dynamic Alt Tags Queue', 'dynamic-alt-tags' ),
 			__( 'Dynamic Alt Tags Queue', 'dynamic-alt-tags' ),
-			'upload_files',
+			'manage_options',
 			'ai-alt-text-queue',
 			array( $this, 'render_queue_page' )
 		);
@@ -77,7 +77,8 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( false === strpos( $hook_suffix, 'ai-alt-text' ) ) {
+		$allowed_hooks = array( 'upload.php', 'post.php', 'post-new.php' );
+		if ( false === strpos( $hook_suffix, 'ai-alt-text' ) && ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
 			return;
 		}
 
@@ -85,15 +86,33 @@ class WPAI_Alt_Text_Admin {
 			'dynamic-alt-tags-admin',
 			WPAI_ALT_TEXT_URL . 'assets/admin.css',
 			array(),
-			WPAI_ALT_TEXT_VERSION
+			file_exists( WPAI_ALT_TEXT_DIR . 'assets/admin.css' ) ? (string) filemtime( WPAI_ALT_TEXT_DIR . 'assets/admin.css' ) : WPAI_ALT_TEXT_VERSION
 		);
 
 		wp_enqueue_script(
 			'dynamic-alt-tags-admin',
 			WPAI_ALT_TEXT_URL . 'assets/admin.js',
 			array(),
-			WPAI_ALT_TEXT_VERSION,
+			file_exists( WPAI_ALT_TEXT_DIR . 'assets/admin.js' ) ? (string) filemtime( WPAI_ALT_TEXT_DIR . 'assets/admin.js' ) : WPAI_ALT_TEXT_VERSION,
 			true
+		);
+
+		wp_localize_script(
+			'dynamic-alt-tags-admin',
+			'aiAltAdmin',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'processNowNonce' => wp_create_nonce( 'ai_alt_process_now_ajax' ),
+				'uploadActionNonce' => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
+				'i18n' => array(
+					'processing' => __( 'Processing queue...', 'dynamic-alt-tags' ),
+					'success'    => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
+					'error'      => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
+					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
+					'customAltRequired'  => __( 'Enter custom alt text before applying.', 'dynamic-alt-tags' ),
+					'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
+				),
+			)
 		);
 	}
 
@@ -116,14 +135,16 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function render_queue_page() {
-		if ( ! current_user_can( 'upload_files' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'dynamic-alt-tags' ) );
 		}
 
 		$status   = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
+		$view     = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'active';
+		$view     = in_array( $view, array( 'active', 'history' ), true ) ? $view : 'active';
 		$page     = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		$per_page = 20;
-		$data     = $this->queue_repo->get_paginated( $page, $per_page, $status );
+		$data     = $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-queue.php';
 	}
@@ -184,6 +205,33 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
+	 * Process now via AJAX.
+	 *
+	 * @return void
+	 */
+	public function handle_process_now_ajax() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'ai_alt_process_now_ajax' );
+
+		$options   = $this->settings->get_options();
+		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
+
+		wp_send_json_success(
+			array(
+				'processed' => $processed,
+			)
+		);
+	}
+
+	/**
 	 * Test provider connection.
 	 *
 	 * @return void
@@ -239,7 +287,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_queue_action() {
-		if ( ! current_user_can( 'upload_files' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -323,6 +371,10 @@ class WPAI_Alt_Text_Admin {
 			}
 			$this->processor->approve_row( $row_id, $alt );
 		} elseif ( 'reject' === $action ) {
+			$row = $this->queue_repo->get_row( $row_id );
+			if ( is_array( $row ) && ! empty( $row['attachment_id'] ) ) {
+				update_post_meta( absint( $row['attachment_id'] ), '_wp_attachment_image_alt', '' );
+			}
 			$this->queue_repo->mark_final( $row_id, 'rejected', '' );
 		} elseif ( 'skip' === $action ) {
 			$row = $this->queue_repo->get_row( $row_id );

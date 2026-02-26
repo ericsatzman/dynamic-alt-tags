@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<p>
 				<?php
 				printf(
-					esc_html__( 'Backfill complete. %d images were queued.', 'dynamic-alt-tags' ),
+					esc_html__( 'Backfill complete. %d images were queued. Previously processed images were skipped.', 'dynamic-alt-tags' ),
 					isset( $_GET['enqueued'] ) ? absint( $_GET['enqueued'] ) : 0
 				);
 				?>
@@ -61,6 +61,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<h2><?php esc_html_e( 'Tools', 'dynamic-alt-tags' ); ?></h2>
 	<p><?php esc_html_e( 'Backfill scans existing images with empty alt text and adds them to the queue.', 'dynamic-alt-tags' ); ?></p>
+	<p class="description"><?php esc_html_e( 'Backfill now skips images that were already processed earlier.', 'dynamic-alt-tags' ); ?></p>
 
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-right:8px;">
 		<input type="hidden" name="action" value="ai_alt_run_backfill" />
@@ -68,10 +69,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php submit_button( __( 'Run Backfill', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
 	</form>
 
-	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;">
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;" id="ai-alt-process-form">
 		<input type="hidden" name="action" value="ai_alt_process_now" />
 		<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
-		<?php submit_button( __( 'Process Queue Now', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
+		<div class="ai-alt-progress-wrap" id="ai-alt-progress-wrap" hidden>
+			<div class="ai-alt-progress-bar" id="ai-alt-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+		</div>
+		<p class="description" id="ai-alt-progress-message" aria-live="polite"></p>
+		<?php submit_button( __( 'Process Queue Now', 'dynamic-alt-tags' ), 'secondary', 'ai_alt_process_submit', false ); ?>
 	</form>
 
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-left:8px;">

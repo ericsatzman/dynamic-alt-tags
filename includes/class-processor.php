@@ -139,6 +139,65 @@ class WPAI_Alt_Text_Processor {
 	}
 
 	/**
+	 * Process one attachment into a generated suggestion for review.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	public function process_attachment_for_review( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		$row = $this->queue_repo->get_row_by_attachment( $attachment_id );
+		if ( ! is_array( $row ) ) {
+			return false;
+		}
+
+		$row_id = isset( $row['id'] ) ? absint( $row['id'] ) : 0;
+		if ( ! $row_id ) {
+			return false;
+		}
+
+		$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
+		if ( ! in_array( $status, array( 'queued', 'failed' ), true ) ) {
+			return false;
+		}
+
+		$image_url = wp_get_attachment_url( $attachment_id );
+		if ( ! $image_url ) {
+			$this->queue_repo->mark_failed( $row_id, 'missing_image_url', 'Attachment URL not found.' );
+			return false;
+		}
+
+		$post_id = isset( $row['post_id'] ) ? absint( $row['post_id'] ) : 0;
+		$context = array(
+			'attachment_title' => get_the_title( $attachment_id ),
+			'post_title'       => $post_id ? get_the_title( $post_id ) : '',
+		);
+
+		$result = $this->provider->generate_caption( $image_url, $context );
+		if ( is_wp_error( $result ) ) {
+			$this->queue_repo->mark_failed( $row_id, $result->get_error_code(), $result->get_error_message() );
+			return false;
+		}
+
+		$caption    = isset( $result['caption'] ) ? (string) $result['caption'] : '';
+		$confidence = isset( $result['confidence'] ) ? (float) $result['confidence'] : 0.0;
+		$alt_text   = $this->generator->to_alt_text( $caption );
+		if ( ! $this->generator->is_usable_alt( $alt_text ) ) {
+			$this->queue_repo->mark_failed( $row_id, 'bad_alt_output', 'Generated alt text did not pass quality checks.' );
+			return false;
+		}
+
+		$this->queue_repo->mark_generated( $row_id, wp_json_encode( $result ), $alt_text, $confidence );
+		update_post_meta( $attachment_id, '_ai_alt_review_required', 1 );
+
+		return true;
+	}
+
+	/**
 	 * Approve row and persist alt text.
 	 *
 	 * @param int    $row_id Row ID.

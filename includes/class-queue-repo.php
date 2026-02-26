@@ -60,23 +60,11 @@ class WPAI_Alt_Text_Queue_Repo {
 			)
 		);
 
-		$now = current_time( 'mysql' );
-
 		if ( $existing_id ) {
-			$wpdb->update(
-				$this->table,
-				array(
-					'status'     => 'queued',
-					'post_id'    => $post_id,
-					'updated_at' => $now,
-				),
-				array( 'id' => absint( $existing_id ) ),
-				array( '%s', '%d', '%s' ),
-				array( '%d' )
-			);
-
-			return true;
+			return false;
 		}
+
+		$now = current_time( 'mysql' );
 
 		$result = $wpdb->insert(
 			$this->table,
@@ -276,31 +264,88 @@ class WPAI_Alt_Text_Queue_Repo {
 	}
 
 	/**
+	 * Get row by attachment ID.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return array<string,mixed>|null
+	 */
+	public function get_row_by_attachment( $attachment_id ) {
+		global $wpdb;
+
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return null;
+		}
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table} WHERE attachment_id = %d AND provider = %s LIMIT 1",
+				$attachment_id,
+				'cloudflare'
+			),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
+	 * Delete queue rows by attachment ID.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return int Number of deleted rows.
+	 */
+	public function delete_by_attachment_id( $attachment_id ) {
+		global $wpdb;
+
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return 0;
+		}
+
+		return (int) $wpdb->delete(
+			$this->table,
+			array( 'attachment_id' => $attachment_id ),
+			array( '%d' )
+		);
+	}
+
+	/**
 	 * Paginate queue rows.
 	 *
 	 * @param int    $page Current page.
 	 * @param int    $per_page Per page.
 	 * @param string $status Status filter.
+	 * @param string $view View mode: active|history.
 	 * @return array<string,mixed>
 	 */
-	public function get_paginated( $page = 1, $per_page = 20, $status = '' ) {
+	public function get_paginated( $page = 1, $per_page = 20, $status = '', $view = 'active' ) {
 		global $wpdb;
 
-		$page     = max( 1, absint( $page ) );
-		$per_page = max( 1, min( 100, absint( $per_page ) ) );
-		$offset   = ( $page - 1 ) * $per_page;
-		$params   = array();
-		$where    = '1=1';
+		$page              = max( 1, absint( $page ) );
+		$per_page          = max( 1, min( 100, absint( $per_page ) ) );
+		$offset            = ( $page - 1 ) * $per_page;
+		$params            = array();
+		$view              = sanitize_key( $view );
+		$active_statuses   = array( 'queued', 'processing', 'generated', 'failed' );
+		$history_statuses  = array( 'approved', 'rejected', 'skipped' );
+		$allowed_statuses  = 'history' === $view ? $history_statuses : $active_statuses;
+		$status            = sanitize_key( $status );
+		$has_status_filter = false;
 
-		if ( '' !== $status ) {
+		$in_sql = "'" . implode( "', '", array_map( 'esc_sql', $allowed_statuses ) ) . "'";
+		$where  = "q.status IN ({$in_sql})";
+
+		if ( '' !== $status && in_array( $status, $allowed_statuses, true ) ) {
 			$where    .= ' AND q.status = %s';
-			$params[] = sanitize_key( $status );
+			$params[] = $status;
+			$has_status_filter = true;
 		}
 
 		$total_sql = "SELECT COUNT(*) FROM {$this->table} q WHERE {$where}";
 		$rows_sql  = "SELECT q.* FROM {$this->table} q WHERE {$where} ORDER BY q.updated_at DESC LIMIT %d OFFSET %d";
 
-		if ( '' !== $status ) {
+		if ( $has_status_filter ) {
 			$total = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					$total_sql,
@@ -313,7 +358,7 @@ class WPAI_Alt_Text_Queue_Repo {
 
 		$params[] = $per_page;
 		$params[] = $offset;
-		if ( '' !== $status ) {
+		if ( $has_status_filter ) {
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					$rows_sql,

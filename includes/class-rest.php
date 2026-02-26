@@ -66,7 +66,7 @@ class WPAI_Alt_Text_REST {
 	 * @return bool
 	 */
 	public function can_manage() {
-		return current_user_can( 'upload_files' );
+		return current_user_can( 'manage_options' );
 	}
 
 	/**

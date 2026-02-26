@@ -6,3 +6,33 @@
 	width: 100%;
 	max-width: 420px;
 }
+
+.ai-alt-wrap .ai-alt-progress-wrap {
+	width: 100%;
+	max-width: 320px;
+	height: 10px;
+	border: 1px solid #ccd0d4;
+	background: #f6f7f7;
+	border-radius: 999px;
+	margin-top: 10px;
+	overflow: hidden;
+}
+
+.ai-alt-wrap .ai-alt-progress-bar {
+	height: 100%;
+	width: 0;
+	background: #2271b1;
+	transition: width 160ms ease;
+}
+
+.ai-alt-wrap .ai-alt-message-success {
+	color: #0a5a2d;
+}
+
+.ai-alt-wrap .ai-alt-message-error {
+	color: #b32d2e;
+}
+
+.ai-alt-upload-apply {
+	margin-left: 8px;
+}

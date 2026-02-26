@@ -11,7 +11,7 @@ GitHub repository:
 - Branch: `main`
 
 Latest pushed commit at handoff:
-- `9bd5e40` - Add View Image action to queue row actions
+- `cec8342` - Add project handoff document
 
 ## 2) What Has Been Implemented
 
@@ -119,9 +119,10 @@ Repo was intentionally reduced to plugin-only tracked files under:
 ### Important local workspace caveat
 In this WordPress directory there are many untracked core/plugin/theme files (local environment files). This is expected and should generally be ignored when committing to this repo.
 
-At handoff, `git status --short` showed one main tracked change set already pushed (latest commit `9bd5e40`).
+At handoff, `git status --short` showed one main tracked change set already pushed (latest commit `cec8342`).
 
 ## 7) File Inventory (plugin)
+- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/HANDOFF.md`
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/dynamic-alt-tags.php`
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/readme.txt`
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/uninstall.php`
@@ -187,7 +188,7 @@ If queue shows failed rows with confidence 0.00:
 6. Check Cloudflare logs for POST entries and response status.
 
 ## 12) Commits of Interest (for traceability)
+- `cec8342` Add project handoff document
 - `9bd5e40` Add View Image action to queue row actions
 - `512f883` Add queue bulk actions and provider connection test
 - `ba88c80` Restrict repository contents to dynamic-alt-tags plugin only
-
