@@ -532,10 +532,17 @@ class WPAI_Alt_Text_Admin {
 	private function render_no_alt_rows_html( $rows ) {
 		ob_start();
 		foreach ( $rows as $row ) {
-			$attachment_id = isset( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
-			$queue_status  = isset( $row['queue_status'] ) ? sanitize_key( (string) $row['queue_status'] ) : '';
-			$thumb         = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
-			$image_url     = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
+			$attachment_id    = isset( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
+			$queue_status     = isset( $row['queue_status'] ) ? sanitize_key( (string) $row['queue_status'] ) : '';
+			$is_active_status = in_array( $queue_status, array( 'queued', 'processing', 'generated' ), true );
+			$button_label     = __( 'Add to Queue', 'dynamic-alt-tags' );
+			if ( '' !== $queue_status && ! $is_active_status ) {
+				$button_label = __( 'Requeue', 'dynamic-alt-tags' );
+			} elseif ( $is_active_status ) {
+				$button_label = __( 'Queued', 'dynamic-alt-tags' );
+			}
+			$thumb            = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
+			$image_url        = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
 			?>
 			<tr>
 				<td>
@@ -544,8 +551,8 @@ class WPAI_Alt_Text_Admin {
 				</td>
 				<td><?php esc_html_e( 'None', 'dynamic-alt-tags' ); ?></td>
 				<td><code class="ai-alt-no-alt-queue-status"><?php echo '' !== $queue_status ? esc_html( $queue_status ) : esc_html__( 'not_queued', 'dynamic-alt-tags' ); ?></code></td>
-				<td>
-					<button class="button ai-alt-add-no-alt" type="button" data-attachment-id="<?php echo esc_attr( (string) $attachment_id ); ?>" <?php echo '' !== $queue_status ? 'disabled' : ''; ?>><?php echo '' !== $queue_status ? esc_html__( 'Queued', 'dynamic-alt-tags' ) : esc_html__( 'Add to Queue', 'dynamic-alt-tags' ); ?></button>
+					<td>
+						<button class="button ai-alt-add-no-alt" type="button" data-attachment-id="<?php echo esc_attr( (string) $attachment_id ); ?>" <?php echo $is_active_status ? 'disabled' : ''; ?>><?php echo esc_html( $button_label ); ?></button>
 					<?php if ( ! empty( $image_url ) ) : ?>
 						<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>
 					<?php endif; ?>
@@ -912,6 +919,7 @@ class WPAI_Alt_Text_Admin {
 			$row = $this->queue_repo->get_row( $row_id );
 			if ( is_array( $row ) && ! empty( $row['attachment_id'] ) ) {
 				update_post_meta( absint( $row['attachment_id'] ), '_wp_attachment_image_alt', '' );
+				update_post_meta( absint( $row['attachment_id'] ), '_ai_alt_review_required', 0 );
 			}
 			$this->queue_repo->mark_final( $row_id, 'rejected', '' );
 		} elseif ( 'skip' === $action ) {

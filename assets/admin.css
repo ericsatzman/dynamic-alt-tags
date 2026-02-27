@@ -103,3 +103,10 @@
 .ai-alt-wrap .ai-alt-connection-detail {
 	color: #8a2424;
 }
+
+.ai-alt-wrap .ai-alt-load-more-wrap {
+	float: none;
+	display: flex;
+	justify-content: center;
+	margin-top: 14px;
+}

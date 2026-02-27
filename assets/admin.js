@@ -119,12 +119,16 @@
 				resultNode.textContent = message;
 				resultNode.classList.add('ai-alt-message-success');
 
-				var altText = payload.data && typeof payload.data.alt_text !== 'undefined' ? String(payload.data.alt_text) : '';
-				var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-				if (container instanceof HTMLElement) {
-					setAltFieldValue(container, altText, attachmentId);
-				}
-				setAltFieldValue(document, altText, attachmentId);
+					// Generate creates/refreshes a suggestion only; do not overwrite the current alt field value.
+					var shouldUpdateAltField = reviewAction !== 'generate' && payload.data && typeof payload.data.alt_text !== 'undefined';
+					if (shouldUpdateAltField) {
+						var altText = String(payload.data.alt_text);
+						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
+						if (container instanceof HTMLElement) {
+							setAltFieldValue(container, altText, attachmentId);
+						}
+						setAltFieldValue(document, altText, attachmentId);
+					}
 
 				if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
 					customInput.value = '';

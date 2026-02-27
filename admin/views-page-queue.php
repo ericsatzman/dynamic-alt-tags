@@ -185,7 +185,7 @@ $is_no_alt  = 'no_alt' === $view;
 
 	<?php if ( $has_more ) : ?>
 		<div class="tablenav ai-alt-load-more-wrap">
-			<button type="button" class="button ai-alt-load-more" data-view="<?php echo esc_attr( $view ); ?>" data-status="<?php echo esc_attr( $status ); ?>" data-next-page="<?php echo esc_attr( (string) ( $page_num + 1 ) ); ?>" data-per-page="<?php echo esc_attr( (string) $per_page ); ?>"><?php esc_html_e( 'Add more', 'dynamic-alt-tags' ); ?></button>
+			<button type="button" class="button button-primary ai-alt-load-more" data-view="<?php echo esc_attr( $view ); ?>" data-status="<?php echo esc_attr( $status ); ?>" data-next-page="<?php echo esc_attr( (string) ( $page_num + 1 ) ); ?>" data-per-page="<?php echo esc_attr( (string) $per_page ); ?>"><?php esc_html_e( 'Add more images', 'dynamic-alt-tags' ); ?></button>
 		</div>
 	<?php endif; ?>
 </div>
