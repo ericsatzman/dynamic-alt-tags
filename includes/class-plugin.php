@@ -279,22 +279,16 @@ class WPAI_Alt_Text_Plugin {
 		}
 
 		$review_html = '';
-		if ( '' !== $status ) {
-			$review_html .= '<p><strong>' . esc_html__( 'Status:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $status ) . '</p>';
-		}
-		if ( '' !== $suggested_alt ) {
-			$review_html .= '<p><strong>' . esc_html__( 'Suggested Alt:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $suggested_alt ) . '</p>';
-		}
-		if ( '' !== $final_alt ) {
-			$review_html .= '<p><strong>' . esc_html__( 'Final Alt:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $final_alt ) . '</p>';
-		}
+			if ( '' !== $suggested_alt ) {
+				$review_html .= '<p><strong>' . esc_html__( 'Suggested Alt:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $suggested_alt ) . '</p>';
+			}
 		if ( '' !== $error_message ) {
 			$review_html .= '<p><strong>' . esc_html__( 'Generation Error:', 'dynamic-alt-tags' ) . '</strong> ' . esc_html( $error_message ) . '</p>';
 		}
 		$review_html .= '<p><label>' . esc_html__( 'Action', 'dynamic-alt-tags' ) . '<br />';
 		$review_html .= '<select class="ai-alt-upload-action" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '" name="attachments[' . esc_attr( (string) $attachment_id ) . '][ai_alt_action]">' . $options_html . '</select>';
 		$review_html .= '</label></p>';
-		$review_html .= '<p><label>' . esc_html__( 'Custom Alt Text', 'dynamic-alt-tags' ) . '<br />';
+			$review_html .= '<p class="ai-alt-upload-custom-wrap" style="display:none;"><label>' . esc_html__( 'Custom Alt Text', 'dynamic-alt-tags' ) . '<br />';
 		$review_html .= '<input type="text" class="widefat ai-alt-upload-custom-alt" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" name="attachments[' . esc_attr( (string) $attachment_id ) . '][ai_alt_custom_alt]" value="" />';
 		$review_html .= '</label></p>';
 		$review_html .= '<p class="ai-alt-upload-apply-row"><input type="button" class="button ai-alt-upload-apply" style="display:none;" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '" value="' . esc_attr__( 'Apply', 'dynamic-alt-tags' ) . '" /></p>';

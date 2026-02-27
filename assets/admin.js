@@ -39,6 +39,27 @@
 		applyButton.style.display = isCustom ? 'inline-block' : 'none';
 	}
 
+	function setUploadCustomVisibility(select) {
+		if (!(select instanceof HTMLSelectElement)) {
+			return;
+		}
+
+		var container = select.closest('tr, .compat-field, .setting, .attachment-details');
+		var customWrap = container ? container.querySelector('.ai-alt-upload-custom-wrap') : null;
+
+		if (!(customWrap instanceof HTMLElement)) {
+			var customInput = container ? container.querySelector('.ai-alt-upload-custom-alt') : null;
+			customWrap = customInput instanceof HTMLElement ? customInput.closest('p') : null;
+		}
+
+		if (!(customWrap instanceof HTMLElement)) {
+			return;
+		}
+
+		var isCustom = String(select.value || '') === 'custom';
+		customWrap.style.display = isCustom ? 'block' : 'none';
+	}
+
 	function applyUploadAction(trigger, select, customInput, resultNode) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -509,13 +530,14 @@
 			return;
 		}
 
-			var isUploadActionSelect = target instanceof HTMLSelectElement && (target.classList.contains('ai-alt-upload-action') || /\[ai_alt_action\]$/.test(String(target.name || '')));
-			if (isUploadActionSelect) {
-				var actionValue = String(target.value || '');
-				setUploadApplyVisibility(target);
-				if (!actionValue) {
-					return;
-				}
+				var isUploadActionSelect = target instanceof HTMLSelectElement && (target.classList.contains('ai-alt-upload-action') || /\[ai_alt_action\]$/.test(String(target.name || '')));
+				if (isUploadActionSelect) {
+					var actionValue = String(target.value || '');
+					setUploadApplyVisibility(target);
+					setUploadCustomVisibility(target);
+					if (!actionValue) {
+						return;
+					}
 				if (actionValue === 'custom') {
 					return;
 				}
@@ -539,13 +561,14 @@
 			}
 		});
 
-	document.addEventListener('DOMContentLoaded', function () {
-		var selects = document.querySelectorAll('select.ai-alt-upload-action');
-		selects.forEach(function (select) {
-			if (select instanceof HTMLSelectElement) {
-				setUploadApplyVisibility(select);
-			}
-		});
+		document.addEventListener('DOMContentLoaded', function () {
+			var selects = document.querySelectorAll('select.ai-alt-upload-action');
+			selects.forEach(function (select) {
+				if (select instanceof HTMLSelectElement) {
+					setUploadApplyVisibility(select);
+					setUploadCustomVisibility(select);
+				}
+			});
 
 		// Make admin notices one-time by removing notice query args after render.
 		if (window.history && typeof window.history.replaceState === 'function') {
