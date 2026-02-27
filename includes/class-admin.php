@@ -165,6 +165,7 @@ class WPAI_Alt_Text_Admin {
 		$page     = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		$per_page = 20;
 		$data     = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+		$total_images = $this->queue_repo->get_total_no_alt_images();
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-queue.php';
 	}

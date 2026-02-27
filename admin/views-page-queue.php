@@ -15,6 +15,7 @@ $page_num   = isset( $data['page'] ) ? absint( $data['page'] ) : 1;
 $per_page   = isset( $data['per_page'] ) ? absint( $data['per_page'] ) : 20;
 $max_pages  = max( 1, (int) ceil( $total / $per_page ) );
 $has_more   = $page_num < $max_pages;
+$total_images = isset( $total_images ) ? absint( $total_images ) : 0;
 $status     = isset( $status ) ? sanitize_key( (string) $status ) : '';
 $view       = isset( $view ) && in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
 $is_history = 'history' === $view;
@@ -102,7 +103,7 @@ $is_no_alt  = 'no_alt' === $view;
 		} elseif ( $is_no_alt ) {
 			printf( esc_html__( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total );
 		} else {
-			printf( esc_html__( 'Total queue items: %d', 'dynamic-alt-tags' ), $total );
+			printf( esc_html__( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images );
 		}
 		?>
 	</p>

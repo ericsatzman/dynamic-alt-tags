@@ -501,6 +501,24 @@ class WPAI_Alt_Text_Queue_Repo {
 	}
 
 	/**
+	 * Count image attachments that currently have no alt text.
+	 *
+	 * @return int
+	 */
+	public function get_total_no_alt_images() {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			"SELECT COUNT(*)
+			 FROM {$wpdb->posts} p
+			 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
+			 WHERE p.post_type = 'attachment'
+			 AND p.post_mime_type LIKE 'image/%'
+			 AND (pm.meta_value IS NULL OR pm.meta_value = '')" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		);
+	}
+
+	/**
 	 * Paginate image attachments with empty alt text.
 	 *
 	 * @param int $page Current page.
