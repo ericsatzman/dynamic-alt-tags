@@ -114,7 +114,7 @@ class WPAI_Alt_Text_Admin {
 				'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 				'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
 				'uploadActionNonce' => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
-				'i18n' => array(
+					'i18n' => array(
 					'processing' => __( 'Processing queue...', 'dynamic-alt-tags' ),
 					'success'    => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
 					'error'      => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
@@ -128,10 +128,12 @@ class WPAI_Alt_Text_Admin {
 					'queueAddError'   => __( 'Unable to add image to queue.', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
 					'customAltRequired'  => __( 'Enter custom alt text before applying.', 'dynamic-alt-tags' ),
-					'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
-				),
-			)
-		);
+						'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
+						'confirmSkip'        => __( 'Skip this image and move it to History?', 'dynamic-alt-tags' ),
+						'confirmReject'      => __( 'Reject this generated alt text?', 'dynamic-alt-tags' ),
+					),
+				)
+			);
 	}
 
 	/**
@@ -446,6 +448,11 @@ class WPAI_Alt_Text_Admin {
 		$attachment_id = isset( $_POST['attachment_id'] ) ? absint( wp_unslash( $_POST['attachment_id'] ) ) : 0;
 		if ( ! $attachment_id ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid attachment.', 'dynamic-alt-tags' ) ), 400 );
+		}
+
+		$attachment = get_post( $attachment_id );
+		if ( ! ( $attachment instanceof WP_Post ) || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $attachment_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Only image attachments can be queued.', 'dynamic-alt-tags' ) ), 400 );
 		}
 
 		$ok = $this->queue_repo->enqueue_or_requeue( $attachment_id, 0 );

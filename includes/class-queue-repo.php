@@ -197,11 +197,19 @@ class WPAI_Alt_Text_Queue_Repo {
 			return array();
 		}
 
-		$id_list = implode( ',', array_map( 'absint', $ids ) );
-		$wpdb->query( "UPDATE {$this->table} SET status = 'processing', locked_at = '{$now}', updated_at = '{$now}' WHERE id IN ({$id_list})" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$ids          = array_map( 'absint', $ids );
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		$update_sql   = $wpdb->prepare(
+			"UPDATE {$this->table} SET status = 'processing', locked_at = %s, updated_at = %s WHERE id IN ({$placeholders})",
+			array_merge( array( $now, $now ), $ids )
+		);
+		$wpdb->query( $update_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		return $wpdb->get_results(
-			"SELECT * FROM {$this->table} WHERE id IN ({$id_list})", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table} WHERE id IN ({$placeholders})",
+				$ids
+			),
 			ARRAY_A
 		);
 	}

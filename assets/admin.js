@@ -460,14 +460,16 @@
 			return;
 		}
 
-		var actionValue = String(trigger.value || '');
-		var isReject = actionValue === 'reject' || actionValue.indexOf('reject|') === 0;
-		var isSkip = actionValue === 'skip' || actionValue.indexOf('skip|') === 0;
+			var actionValue = String(trigger.value || '');
+			var isReject = actionValue === 'reject' || actionValue.indexOf('reject|') === 0;
+			var isSkip = actionValue === 'skip' || actionValue.indexOf('skip|') === 0;
+			var adminData = window.aiAltAdmin || {};
+			var i18n = adminData.i18n || {};
 
-			if (isReject || isSkip) {
-				var message = isSkip
-					? 'Skip this image and move it to History?'
-					: 'Reject this generated alt text?';
+				if (isReject || isSkip) {
+					var message = isSkip
+						? (i18n.confirmSkip || 'Skip this image and move it to History?')
+						: (i18n.confirmReject || 'Reject this generated alt text?');
 
 				if (!window.confirm(message)) {
 					event.preventDefault();

@@ -382,6 +382,7 @@ class WPAI_Alt_Text_Plugin {
 	 * @return void
 	 */
 	public function handle_upload_action_ajax() {
+		$is_debug_enabled = defined( 'WP_DEBUG' ) && WP_DEBUG;
 		$debug = array(
 			'timestamp' => current_time( 'mysql' ),
 			'user_id'   => get_current_user_id(),
@@ -390,11 +391,12 @@ class WPAI_Alt_Text_Plugin {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			$debug['error'] = 'forbidden';
-			error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			if ( $is_debug_enabled ) {
+				error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			}
 			wp_send_json_error(
 				array(
 					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
-					'debug'   => $debug,
 				),
 				403
 			);
@@ -403,11 +405,12 @@ class WPAI_Alt_Text_Plugin {
 		$nonce_ok = check_ajax_referer( 'ai_alt_upload_action_ajax', '_ajax_nonce', false );
 		if ( ! $nonce_ok ) {
 			$debug['error'] = 'invalid_nonce';
-			error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			if ( $is_debug_enabled ) {
+				error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			}
 			wp_send_json_error(
 				array(
 					'message' => __( 'Invalid security nonce.', 'dynamic-alt-tags' ),
-					'debug'   => $debug,
 				),
 				403
 			);
@@ -443,13 +446,14 @@ class WPAI_Alt_Text_Plugin {
 				'final_alt'     => isset( $after_row['final_alt'] ) ? sanitize_text_field( (string) $after_row['final_alt'] ) : '',
 			) : null,
 		);
-		error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		if ( $is_debug_enabled ) {
+			error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 
 		if ( empty( $result['ok'] ) ) {
 			wp_send_json_error(
 				array(
 					'message' => isset( $result['message'] ) ? (string) $result['message'] : __( 'Unable to apply action.', 'dynamic-alt-tags' ),
-					'debug'   => $debug,
 				),
 				400
 			);
@@ -463,7 +467,6 @@ class WPAI_Alt_Text_Plugin {
 			array(
 				'message'  => isset( $result['message'] ) ? (string) $result['message'] : '',
 				'alt_text' => isset( $result['alt_text'] ) ? (string) $result['alt_text'] : '',
-				'debug'    => $debug,
 			)
 		);
 	}
