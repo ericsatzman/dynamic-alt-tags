@@ -99,6 +99,7 @@ class WPAI_Alt_Text_Processor {
 
 			$post_id = isset( $job['post_id'] ) ? absint( $job['post_id'] ) : 0;
 			$context = array(
+				'attachment_id'    => $attachment_id,
 				'attachment_title' => get_the_title( $attachment_id ),
 				'post_title'       => $post_id ? get_the_title( $post_id ) : '',
 			);
@@ -173,6 +174,7 @@ class WPAI_Alt_Text_Processor {
 
 		$post_id = isset( $row['post_id'] ) ? absint( $row['post_id'] ) : 0;
 		$context = array(
+			'attachment_id'    => $attachment_id,
 			'attachment_title' => get_the_title( $attachment_id ),
 			'post_title'       => $post_id ? get_the_title( $post_id ) : '',
 		);

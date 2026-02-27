@@ -115,6 +115,7 @@ class WPAI_Alt_Text_Admin {
 					'processing' => __( 'Processing queue...', 'dynamic-alt-tags' ),
 					'success'    => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
 					'error'      => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
+					'partial'    => __( 'Processing stopped early after %d items. You can run it again to continue.', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
 					'customAltRequired'  => __( 'Enter custom alt text before applying.', 'dynamic-alt-tags' ),
 					'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
@@ -249,6 +250,8 @@ class WPAI_Alt_Text_Admin {
 		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
 		$after   = $this->queue_repo->get_active_status_counts();
 		$message = '';
+		$remaining_claimable = ( isset( $after['queued'] ) ? absint( $after['queued'] ) : 0 ) + ( isset( $after['failed'] ) ? absint( $after['failed'] ) : 0 );
+		$has_more = $remaining_claimable > 0;
 
 		if ( $processed <= 0 ) {
 			$message = $this->get_zero_processed_message( $before, $after );
@@ -256,8 +259,10 @@ class WPAI_Alt_Text_Admin {
 
 		wp_send_json_success(
 			array(
-				'processed' => $processed,
-				'message'   => $message,
+				'processed'           => $processed,
+				'message'             => $message,
+				'remaining_claimable' => $remaining_claimable,
+				'has_more'            => $has_more,
 			)
 		);
 	}
@@ -362,6 +367,7 @@ class WPAI_Alt_Text_Admin {
 				$latest_result = $provider->generate_caption(
 					$image_url,
 					array(
+						'attachment_id'    => $attachment_id,
 						'attachment_title' => get_the_title( $attachment_id ),
 						'post_title'       => 'Provider latest-image test',
 					)
@@ -508,7 +514,7 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_queue_action', 'ai_alt_queue_nonce' );
 
-		$allowed_actions = array( 'approve', 'reject', 'skip' );
+		$allowed_actions = array( 'approve', 'reject', 'skip', 'process' );
 		$updated_count   = 0;
 
 		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
@@ -608,6 +614,15 @@ class WPAI_Alt_Text_Admin {
 				update_post_meta( absint( $row['attachment_id'] ), '_ai_alt_review_required', 0 );
 			}
 			$this->queue_repo->mark_final( $row_id, 'skipped', '' );
+		} elseif ( 'process' === $action ) {
+			$row = $this->queue_repo->get_row( $row_id );
+			if ( is_array( $row ) && ! empty( $row['attachment_id'] ) ) {
+				$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
+				if ( 'generated' === $status ) {
+					$this->queue_repo->mark_failed( $row_id, 'manual_reprocess', 'Manual reprocess requested.' );
+				}
+				$this->processor->process_attachment_for_review( absint( $row['attachment_id'] ) );
+			}
 		}
 	}
 }

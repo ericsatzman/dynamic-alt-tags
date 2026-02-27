@@ -136,6 +136,9 @@ $is_history = 'history' === $view;
 							<?php if ( ! $is_history ) : ?>
 								<button class="button button-primary" type="submit" name="single_action" value="<?php echo esc_attr( 'approve|' . $row_id ); ?>"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></button>
 								<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'reject|' . $row_id ); ?>"><?php esc_html_e( 'Reject', 'dynamic-alt-tags' ); ?></button>
+								<?php if ( in_array( $status, array( 'queued', 'failed', 'generated' ), true ) ) : ?>
+									<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'process|' . $row_id ); ?>"><?php esc_html_e( 'Process', 'dynamic-alt-tags' ); ?></button>
+								<?php endif; ?>
 							<?php endif; ?>
 							<?php if ( ! empty( $image_url ) ) : ?>
 								<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>

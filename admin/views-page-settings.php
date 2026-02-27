@@ -44,6 +44,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	<?php endif; ?>
 
+	<?php if ( isset( $_GET['notice'] ) && 'process_partial' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
+		<div class="notice notice-warning is-dismissible">
+			<p>
+				<?php
+				printf(
+					esc_html__( 'Processing stopped early after %d items. Run Process Queue Now again to continue.', 'dynamic-alt-tags' ),
+					isset( $_GET['processed'] ) ? absint( $_GET['processed'] ) : 0
+				);
+				?>
+			</p>
+		</div>
+	<?php endif; ?>
+
 	<?php if ( isset( $_GET['notice'] ) && 'process_error' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
 		<?php $process_error_msg = isset( $_GET['process_msg'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['process_msg'] ) ) ) : __( 'No items were processed.', 'dynamic-alt-tags' ); ?>
 		<div class="notice notice-error is-dismissible">

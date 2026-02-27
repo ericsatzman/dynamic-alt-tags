@@ -29,6 +29,7 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_account'  => '',
 			'cloudflare_token'    => '',
 			'worker_url'          => '',
+			'direct_upload_mode'  => 0,
 			'batch_size'          => 10,
 			'min_confidence'      => 0.70,
 			'overwrite_existing'  => 0,
@@ -76,6 +77,7 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
 			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
+			'direct_upload_mode'  => __( 'Direct Upload Mode (Send Image Bytes)', 'dynamic-alt-tags' ),
 			'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
 			'require_review'      => __( 'Require Manual Review', 'dynamic-alt-tags' ),
 			'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
@@ -139,6 +141,7 @@ class WPAI_Alt_Text_Settings {
 		$current['min_confidence'] = isset( $input['min_confidence'] ) ? (float) $input['min_confidence'] : 0.70;
 		$current['min_confidence'] = max( 0.00, min( 1.00, $current['min_confidence'] ) );
 
+		$current['direct_upload_mode']  = ! empty( $input['direct_upload_mode'] ) ? 1 : 0;
 		$current['overwrite_existing']  = ! empty( $input['overwrite_existing'] ) ? 1 : 0;
 		$current['require_review']      = ! empty( $input['require_review'] ) ? 1 : 0;
 		$current['keep_data_on_delete'] = ! empty( $input['keep_data_on_delete'] ) ? 1 : 0;
@@ -162,12 +165,16 @@ class WPAI_Alt_Text_Settings {
 
 		$name = self::OPTION_KEY . '[' . $id . ']';
 
-		if ( in_array( $id, array( 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
+		if ( in_array( $id, array( 'direct_upload_mode', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
 				'<label><input type="checkbox" name="%1$s" value="1" %2$s /></label>',
 				esc_attr( $name ),
 				checked( 1, (int) $options[ $id ], false )
 			);
+
+			if ( 'direct_upload_mode' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, the plugin will include local image bytes in the worker request when possible. This helps bypass external image URL fetch restrictions.', 'dynamic-alt-tags' ) . '</p>';
+			}
 			return;
 		}
 

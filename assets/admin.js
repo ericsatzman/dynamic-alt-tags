@@ -328,78 +328,119 @@
 			progressBar.setAttribute('aria-valuenow', String(progress));
 		}, 180);
 
-		var body = new URLSearchParams();
-		body.append('action', 'ai_alt_process_now_ajax');
-		body.append('_ajax_nonce', nonce);
+		var totalProcessed = 0;
+		var iterations = 0;
+		var maxIterations = 25;
+		var lastDetailMessage = '';
 
-		fetch(ajaxUrl, {
-			method: 'POST',
-			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-			},
-			body: body.toString()
-		})
-			.then(function (response) {
-				return response.json();
+		function finishSuccess(processedCount, noticeType, messageText) {
+			window.clearInterval(timer);
+			progressBar.style.width = '100%';
+			progressBar.setAttribute('aria-valuenow', '100');
+			progressMessage.textContent = messageText;
+			progressMessage.classList.add('ai-alt-message-success');
+			window.setTimeout(function () {
+				var url = new URL(window.location.href);
+				url.searchParams.set('page', 'ai-alt-text-settings');
+				url.searchParams.set('notice', noticeType);
+				url.searchParams.set('processed', String(processedCount));
+				window.location.href = url.toString();
+			}, 300);
+		}
+
+		function finishError(messageText) {
+			window.clearInterval(timer);
+			progressBar.style.width = '100%';
+			progressBar.setAttribute('aria-valuenow', '100');
+			progressMessage.textContent = messageText;
+			progressMessage.classList.add('ai-alt-message-error');
+			window.setTimeout(function () {
+				var errorUrl = new URL(window.location.href);
+				errorUrl.searchParams.set('page', 'ai-alt-text-settings');
+				errorUrl.searchParams.set('notice', 'process_error');
+				errorUrl.searchParams.set('process_msg', messageText);
+				window.location.href = errorUrl.toString();
+			}, 300);
+		}
+
+		function runChunk() {
+			iterations += 1;
+			var body = new URLSearchParams();
+			body.append('action', 'ai_alt_process_now_ajax');
+			body.append('_ajax_nonce', nonce);
+
+			fetch(ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+				},
+				body: body.toString()
 			})
-			.then(function (payload) {
-				window.clearInterval(timer);
-				progressBar.style.width = '100%';
-				progressBar.setAttribute('aria-valuenow', '100');
-
-				if (!payload || payload.success !== true) {
-					var errorMessage = i18n.error || 'Queue processing failed. Please try again.';
-					if (payload && payload.data && payload.data.message) {
-						errorMessage = String(payload.data.message);
-					}
-					progressMessage.textContent = errorMessage;
-					progressMessage.classList.add('ai-alt-message-error');
-					return;
-				}
-
-				var processed = 0;
-				if (payload.data && typeof payload.data.processed !== 'undefined') {
-					processed = Number(payload.data.processed) || 0;
-				}
-				var detailMessage = '';
-				if (payload.data && payload.data.message) {
-					detailMessage = String(payload.data.message);
-				}
-
-				if (processed <= 0) {
-					progressMessage.textContent = detailMessage || (i18n.error || 'Queue processing failed. Please try again.');
-					progressMessage.classList.add('ai-alt-message-error');
-					window.setTimeout(function () {
-						var errorUrl = new URL(window.location.href);
-						errorUrl.searchParams.set('page', 'ai-alt-text-settings');
-						errorUrl.searchParams.set('notice', 'process_error');
-						if (detailMessage) {
-							errorUrl.searchParams.set('process_msg', detailMessage);
+				.then(function (response) {
+					return response.json();
+				})
+				.then(function (payload) {
+					if (!payload || payload.success !== true) {
+						var errorMessage = i18n.error || 'Queue processing failed. Please try again.';
+						if (payload && payload.data && payload.data.message) {
+							errorMessage = String(payload.data.message);
 						}
-						window.location.href = errorUrl.toString();
-					}, 300);
-					return;
-				}
+						throw new Error(errorMessage);
+					}
 
-				var successMessage = i18n.success || 'Manual processing finished. %d items processed.';
-				progressMessage.textContent = successMessage.replace('%d', String(processed));
-				progressMessage.classList.add('ai-alt-message-success');
-				window.setTimeout(function () {
-					var url = new URL(window.location.href);
-					url.searchParams.set('page', 'ai-alt-text-settings');
-					url.searchParams.set('notice', 'process_done');
-					url.searchParams.set('processed', String(processed));
-					window.location.href = url.toString();
-				}, 300);
-			})
-			.catch(function () {
-				window.clearInterval(timer);
-				progressMessage.textContent = i18n.error || 'Queue processing failed. Please try again.';
-				progressMessage.classList.add('ai-alt-message-error');
-			})
-			.finally(function () {
-				submitButton.disabled = false;
-			});
+					var chunkProcessed = 0;
+					if (payload.data && typeof payload.data.processed !== 'undefined') {
+						chunkProcessed = Number(payload.data.processed) || 0;
+					}
+					totalProcessed += chunkProcessed;
+
+					var hasMore = false;
+					if (payload.data && typeof payload.data.has_more !== 'undefined') {
+						hasMore = Boolean(payload.data.has_more);
+					}
+
+					lastDetailMessage = '';
+					if (payload.data && payload.data.message) {
+						lastDetailMessage = String(payload.data.message);
+					}
+
+					if (chunkProcessed > 0 && hasMore && iterations < maxIterations) {
+						var processingMessage = i18n.processing || 'Processing queue...';
+						progressMessage.textContent = processingMessage + ' ' + totalProcessed + ' processed so far.';
+						return runChunk();
+					}
+
+					if (totalProcessed > 0) {
+						var doneMessage = i18n.success || 'Manual processing finished. %d items processed.';
+						var partialMessage = i18n.partial || 'Processing stopped early after %d items. You can run it again to continue.';
+						if (hasMore || iterations >= maxIterations) {
+							finishSuccess(totalProcessed, 'process_partial', partialMessage.replace('%d', String(totalProcessed)));
+							return;
+						}
+						finishSuccess(totalProcessed, 'process_done', doneMessage.replace('%d', String(totalProcessed)));
+						return;
+					}
+
+					finishError(lastDetailMessage || (i18n.error || 'Queue processing failed. Please try again.'));
+				})
+				.catch(function (err) {
+					if (totalProcessed > 0) {
+						var partialMessage = i18n.partial || 'Processing stopped early after %d items. You can run it again to continue.';
+						finishSuccess(totalProcessed, 'process_partial', partialMessage.replace('%d', String(totalProcessed)));
+						return;
+					}
+
+					var fallbackError = i18n.error || 'Queue processing failed. Please try again.';
+					finishError((err && err.message) ? String(err.message) : fallbackError);
+				})
+				.finally(function () {
+					if (progressMessage.classList.contains('ai-alt-message-success') || progressMessage.classList.contains('ai-alt-message-error')) {
+						submitButton.disabled = false;
+					}
+				});
+		}
+
+		runChunk();
 	});
 })();
