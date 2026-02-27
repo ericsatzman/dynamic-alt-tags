@@ -142,6 +142,123 @@
 			});
 	}
 
+	function processQueueRow(trigger) {
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.queueProcessNonce === 'string' ? adminData.queueProcessNonce : '';
+		if (!nonce && trigger && trigger.getAttribute) {
+			nonce = String(trigger.getAttribute('data-nonce') || '');
+		}
+		var rowId = trigger && trigger.getAttribute ? String(trigger.getAttribute('data-row-id') || '') : '';
+		if (!ajaxUrl || !nonce || !rowId) {
+			return;
+		}
+
+		var row = trigger.closest('tr');
+		if (!(row instanceof HTMLTableRowElement)) {
+			return;
+		}
+
+		var progressWrap = row.querySelector('.ai-alt-row-progress-wrap');
+		var progressBar = row.querySelector('.ai-alt-row-progress-bar');
+		var messageNode = row.querySelector('.ai-alt-row-process-message');
+		var statusNode = row.querySelector('.ai-alt-row-status');
+		var confidenceNode = row.querySelector('.ai-alt-row-confidence');
+		var suggestedInput = row.querySelector('.ai-alt-row-suggested');
+
+		if (!(progressWrap instanceof HTMLDivElement) || !(progressBar instanceof HTMLDivElement) || !(messageNode instanceof HTMLElement)) {
+			return;
+		}
+
+		function clearRowProcessFeedback() {
+			progressWrap.hidden = true;
+			messageNode.textContent = '';
+			messageNode.classList.remove('ai-alt-message-success');
+			messageNode.classList.remove('ai-alt-message-error');
+		}
+
+		function scheduleClearRowProcessFeedback() {
+			window.setTimeout(function () {
+				clearRowProcessFeedback();
+			}, 1800);
+		}
+
+		trigger.disabled = true;
+		progressWrap.hidden = false;
+		progressBar.style.width = '0%';
+		progressBar.setAttribute('aria-valuenow', '0');
+		messageNode.textContent = i18n.rowProcessing || 'Processing image...';
+		messageNode.classList.remove('ai-alt-message-success');
+		messageNode.classList.remove('ai-alt-message-error');
+
+		var progress = 0;
+		var timer = window.setInterval(function () {
+			progress = Math.min(progress + 8, 90);
+			progressBar.style.width = progress + '%';
+			progressBar.setAttribute('aria-valuenow', String(progress));
+		}, 160);
+
+		var body = new URLSearchParams();
+		body.append('action', 'ai_alt_queue_process_ajax');
+		body.append('_ajax_nonce', nonce);
+		body.append('row_id', rowId);
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: body.toString()
+		})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function (payload) {
+				window.clearInterval(timer);
+				progressBar.style.width = '100%';
+				progressBar.setAttribute('aria-valuenow', '100');
+
+				if (!payload || payload.success !== true) {
+					var errorMessage = i18n.rowError || 'Image processing failed. Please try again.';
+					if (payload && payload.data && payload.data.message) {
+						errorMessage = String(payload.data.message);
+					}
+					messageNode.textContent = errorMessage;
+					messageNode.classList.add('ai-alt-message-error');
+					scheduleClearRowProcessFeedback();
+					return;
+				}
+
+				messageNode.textContent = (payload.data && payload.data.message) ? String(payload.data.message) : (i18n.rowSuccess || 'Image successfully processed');
+				messageNode.classList.add('ai-alt-message-success');
+
+				if (statusNode instanceof HTMLElement && payload.data && payload.data.status) {
+					statusNode.textContent = String(payload.data.status);
+				}
+				if (confidenceNode instanceof HTMLElement && payload.data && typeof payload.data.confidence !== 'undefined') {
+					var conf = Number(payload.data.confidence) || 0;
+					confidenceNode.textContent = conf.toFixed(2);
+				}
+				if ((suggestedInput instanceof HTMLInputElement || suggestedInput instanceof HTMLTextAreaElement) && payload.data && typeof payload.data.suggested_alt !== 'undefined') {
+					suggestedInput.value = String(payload.data.suggested_alt || '');
+				}
+				scheduleClearRowProcessFeedback();
+			})
+			.catch(function () {
+				window.clearInterval(timer);
+				progressBar.style.width = '100%';
+				progressBar.setAttribute('aria-valuenow', '100');
+				messageNode.textContent = i18n.rowError || 'Image processing failed. Please try again.';
+				messageNode.classList.add('ai-alt-message-error');
+				scheduleClearRowProcessFeedback();
+			})
+			.finally(function () {
+				trigger.disabled = false;
+			});
+	}
+
 	document.addEventListener('click', function (event) {
 		var target = event.target;
 		if (!(target instanceof HTMLElement)) {
@@ -150,6 +267,12 @@
 
 		var trigger = target.closest('button, input[type="submit"], input[type="button"]');
 		if (!(trigger instanceof HTMLButtonElement) && !(trigger instanceof HTMLInputElement)) {
+			return;
+		}
+
+		if (trigger.classList.contains('ai-alt-row-process')) {
+			event.preventDefault();
+			processQueueRow(trigger);
 			return;
 		}
 

@@ -110,12 +110,16 @@ class WPAI_Alt_Text_Admin {
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'processNowNonce' => wp_create_nonce( 'ai_alt_process_now_ajax' ),
+				'queueProcessNonce' => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 				'uploadActionNonce' => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
 				'i18n' => array(
 					'processing' => __( 'Processing queue...', 'dynamic-alt-tags' ),
 					'success'    => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
 					'error'      => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
 					'partial'    => __( 'Processing stopped early after %d items. You can run it again to continue.', 'dynamic-alt-tags' ),
+					'rowProcessing' => __( 'Processing image...', 'dynamic-alt-tags' ),
+					'rowSuccess'    => __( 'Image successfully processed', 'dynamic-alt-tags' ),
+					'rowError'      => __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
 					'customAltRequired'  => __( 'Enter custom alt text before applying.', 'dynamic-alt-tags' ),
 					'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
@@ -263,6 +267,56 @@ class WPAI_Alt_Text_Admin {
 				'message'             => $message,
 				'remaining_claimable' => $remaining_claimable,
 				'has_more'            => $has_more,
+			)
+		);
+	}
+
+	/**
+	 * Process one queue row via AJAX.
+	 *
+	 * @return void
+	 */
+	public function handle_queue_process_ajax() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'ai_alt_queue_process_ajax' );
+
+		$row_id = isset( $_POST['row_id'] ) ? absint( wp_unslash( $_POST['row_id'] ) ) : 0;
+		if ( ! $row_id ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Invalid queue row.', 'dynamic-alt-tags' ),
+				),
+				400
+			);
+		}
+
+		$message = '';
+		$ok      = $this->process_queue_row( $row_id, $message );
+		$row     = $this->queue_repo->get_row( $row_id );
+
+		if ( ! $ok ) {
+			wp_send_json_error(
+				array(
+					'message' => '' !== $message ? $message : __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
+				),
+				200
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'message'      => __( 'Image successfully processed', 'dynamic-alt-tags' ),
+				'status'       => is_array( $row ) && isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '',
+				'confidence'   => is_array( $row ) && isset( $row['confidence'] ) ? (float) $row['confidence'] : 0.0,
+				'suggested_alt'=> is_array( $row ) && isset( $row['suggested_alt'] ) ? sanitize_text_field( (string) $row['suggested_alt'] ) : '',
 			)
 		);
 	}
@@ -534,6 +588,23 @@ class WPAI_Alt_Text_Admin {
 			$alt  = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
 			$this->apply_queue_action( $row_id, $action, $alt );
 			$updated_count = 1;
+
+			$notice = 'queue_updated';
+			if ( 'process' === $action ) {
+				$notice = 'queue_process_done';
+			}
+
+			$redirect = add_query_arg(
+				array(
+					'page'    => 'ai-alt-text-queue',
+					'notice'  => $notice,
+					'updated' => $updated_count,
+				),
+				admin_url( 'upload.php' )
+			);
+
+			wp_safe_redirect( $redirect );
+			exit;
 		} else {
 			$bulk_action = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
 			if ( '' === $bulk_action || '-1' === $bulk_action ) {
@@ -615,14 +686,43 @@ class WPAI_Alt_Text_Admin {
 			}
 			$this->queue_repo->mark_final( $row_id, 'skipped', '' );
 		} elseif ( 'process' === $action ) {
-			$row = $this->queue_repo->get_row( $row_id );
-			if ( is_array( $row ) && ! empty( $row['attachment_id'] ) ) {
-				$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
-				if ( 'generated' === $status ) {
-					$this->queue_repo->mark_failed( $row_id, 'manual_reprocess', 'Manual reprocess requested.' );
-				}
-				$this->processor->process_attachment_for_review( absint( $row['attachment_id'] ) );
-			}
+			$message = '';
+			$this->process_queue_row( $row_id, $message );
 		}
+	}
+
+	/**
+	 * Process one queue row by attachment id.
+	 *
+	 * @param int         $row_id Queue row ID.
+	 * @param string|null $message Error message output.
+	 * @return bool
+	 */
+	private function process_queue_row( $row_id, &$message = null ) {
+		$message = '';
+		$row     = $this->queue_repo->get_row( $row_id );
+		if ( ! is_array( $row ) || empty( $row['attachment_id'] ) ) {
+			$message = __( 'Queue row was not found.', 'dynamic-alt-tags' );
+			return false;
+		}
+
+		$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
+		if ( 'generated' === $status ) {
+			$this->queue_repo->mark_failed( $row_id, 'manual_reprocess', 'Manual reprocess requested.' );
+		}
+
+		$attachment_id = absint( $row['attachment_id'] );
+		$processed     = $this->processor->process_attachment_for_review( $attachment_id );
+		if ( ! $processed ) {
+			$latest_row = $this->queue_repo->get_row( $row_id );
+			if ( is_array( $latest_row ) && ! empty( $latest_row['error_message'] ) ) {
+				$message = sanitize_text_field( (string) $latest_row['error_message'] );
+			} else {
+				$message = __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' );
+			}
+			return false;
+		}
+
+		return true;
 	}
 }

@@ -18,6 +18,15 @@
 	overflow: hidden;
 }
 
+.ai-alt-wrap .ai-alt-row-progress-wrap {
+	max-width: 220px;
+	margin-top: 8px;
+}
+
+.ai-alt-wrap .ai-alt-row-process-message {
+	margin: 6px 0 0;
+}
+
 .ai-alt-wrap .ai-alt-progress-bar {
 	height: 100%;
 	width: 0;

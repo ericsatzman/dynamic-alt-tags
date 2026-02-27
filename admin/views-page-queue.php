@@ -38,6 +38,12 @@ $is_history = 'history' === $view;
 		</div>
 	<?php endif; ?>
 
+	<?php if ( isset( $_GET['notice'] ) && 'queue_process_done' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
+		<div class="notice notice-success is-dismissible">
+			<p><?php esc_html_e( 'Image successfully processed', 'dynamic-alt-tags' ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<?php if ( isset( $_GET['notice'] ) && 'queue_error' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
 		<?php $queue_error_msg = isset( $_GET['queue_msg'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['queue_msg'] ) ) ) : __( 'Unable to apply bulk action.', 'dynamic-alt-tags' ); ?>
 		<div class="notice notice-error is-dismissible">
@@ -122,14 +128,14 @@ $is_history = 'history' === $view;
 							<?php echo $thumb ? wp_kses_post( $thumb ) : esc_html__( 'N/A', 'dynamic-alt-tags' ); ?>
 							<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 							</td>
-							<td><code><?php echo esc_html( $status ); ?></code></td>
-							<td><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
+							<td><code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code></td>
+							<td class="ai-alt-row-confidence"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
 							<td><?php echo '' !== $existing_alt ? esc_html( $existing_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?></td>
 							<td>
 								<?php if ( $is_history ) : ?>
 									<?php echo esc_html( $display_alt ); ?>
 							<?php else : ?>
-								<input type="text" class="regular-text" name="bulk_final_alt[<?php echo esc_attr( (string) $row_id ); ?>]" value="<?php echo esc_attr( $display_alt ); ?>" />
+								<input type="text" class="regular-text ai-alt-row-suggested" name="bulk_final_alt[<?php echo esc_attr( (string) $row_id ); ?>]" value="<?php echo esc_attr( $display_alt ); ?>" />
 							<?php endif; ?>
 						</td>
 						<td>
@@ -137,7 +143,7 @@ $is_history = 'history' === $view;
 								<button class="button button-primary" type="submit" name="single_action" value="<?php echo esc_attr( 'approve|' . $row_id ); ?>"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></button>
 								<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'reject|' . $row_id ); ?>"><?php esc_html_e( 'Reject', 'dynamic-alt-tags' ); ?></button>
 								<?php if ( in_array( $status, array( 'queued', 'failed', 'generated' ), true ) ) : ?>
-									<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'process|' . $row_id ); ?>"><?php esc_html_e( 'Process', 'dynamic-alt-tags' ); ?></button>
+									<button class="button ai-alt-row-process" type="button" data-row-id="<?php echo esc_attr( (string) $row_id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'ai_alt_queue_process_ajax' ) ); ?>"><?php esc_html_e( 'Process', 'dynamic-alt-tags' ); ?></button>
 								<?php endif; ?>
 							<?php endif; ?>
 							<?php if ( ! empty( $image_url ) ) : ?>
@@ -145,6 +151,10 @@ $is_history = 'history' === $view;
 							<?php endif; ?>
 							<?php if ( ! $is_history ) : ?>
 									<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'skip|' . $row_id ); ?>"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></button>
+									<div class="ai-alt-progress-wrap ai-alt-row-progress-wrap" hidden>
+										<div class="ai-alt-progress-bar ai-alt-row-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+									</div>
+									<p class="description ai-alt-row-process-message" aria-live="polite"></p>
 							<?php endif; ?>
 						</td>
 					</tr>
