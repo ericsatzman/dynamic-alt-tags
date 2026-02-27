@@ -83,6 +83,57 @@ class WPAI_Alt_Text_Queue_Repo {
 	}
 
 	/**
+	 * Enqueue attachment or reset existing queue row to queued.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @param int $post_id Parent post ID.
+	 * @return bool
+	 */
+	public function enqueue_or_requeue( $attachment_id, $post_id = 0 ) {
+		global $wpdb;
+
+		$attachment_id = absint( $attachment_id );
+		$post_id       = absint( $post_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		$existing_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$this->table} WHERE attachment_id = %d AND provider = %s LIMIT 1",
+				$attachment_id,
+				'cloudflare'
+			)
+		);
+
+		$now = current_time( 'mysql' );
+		if ( $existing_id ) {
+			$result = $wpdb->update(
+				$this->table,
+				array(
+					'post_id'        => $post_id,
+					'status'         => 'queued',
+					'raw_caption'    => null,
+					'suggested_alt'  => '',
+					'final_alt'      => '',
+					'confidence'     => 0,
+					'error_code'     => null,
+					'error_message'  => null,
+					'locked_at'      => null,
+					'updated_at'     => $now,
+				),
+				array( 'id' => absint( $existing_id ) ),
+				array( '%d', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s' ),
+				array( '%d' )
+			);
+
+			return false !== $result;
+		}
+
+		return $this->enqueue( $attachment_id, $post_id );
+	}
+
+	/**
 	 * Backfill queue.
 	 *
 	 * @param int $limit Max to enqueue.
@@ -447,5 +498,54 @@ class WPAI_Alt_Text_Queue_Repo {
 		}
 
 		return $counts;
+	}
+
+	/**
+	 * Paginate image attachments with empty alt text.
+	 *
+	 * @param int $page Current page.
+	 * @param int $per_page Per page.
+	 * @return array<string,mixed>
+	 */
+	public function get_no_alt_paginated( $page = 1, $per_page = 20 ) {
+		global $wpdb;
+
+		$page     = max( 1, absint( $page ) );
+		$per_page = max( 1, min( 100, absint( $per_page ) ) );
+		$offset   = ( $page - 1 ) * $per_page;
+
+		$total = (int) $wpdb->get_var(
+			"SELECT COUNT(*)
+			 FROM {$wpdb->posts} p
+			 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
+			 WHERE p.post_type = 'attachment'
+			 AND p.post_mime_type LIKE 'image/%'
+			 AND (pm.meta_value IS NULL OR pm.meta_value = '')" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.ID AS attachment_id, q.id AS queue_row_id, q.status AS queue_status
+				 FROM {$wpdb->posts} p
+				 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
+				 LEFT JOIN {$this->table} q ON (q.attachment_id = p.ID AND q.provider = %s)
+				 WHERE p.post_type = 'attachment'
+				 AND p.post_mime_type LIKE 'image/%%'
+				 AND (pm.meta_value IS NULL OR pm.meta_value = '')
+				 ORDER BY p.ID DESC
+				 LIMIT %d OFFSET %d",
+				'cloudflare',
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'total'    => $total,
+			'page'     => $page,
+			'per_page' => $per_page,
+			'rows'     => is_array( $rows ) ? $rows : array(),
+		);
 	}
 }

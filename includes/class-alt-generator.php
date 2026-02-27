@@ -35,6 +35,15 @@ class WPAI_Alt_Text_Generator {
 			if ( false !== $pos ) {
 				$text = substr( $text, 0, $pos );
 			}
+
+			$sentence_pos = max(
+				(int) strrpos( $text, '.' ),
+				(int) strrpos( $text, '!' ),
+				(int) strrpos( $text, '?' )
+			);
+			if ( $sentence_pos > 0 ) {
+				$text = substr( $text, 0, $sentence_pos + 1 );
+			}
 		}
 
 		if ( '' !== $text ) {

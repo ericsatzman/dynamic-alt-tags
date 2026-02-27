@@ -2,6 +2,22 @@
 	vertical-align: top;
 }
 
+.ai-alt-wrap .ai-alt-queue-process-top {
+	float: right;
+	margin-top: 0;
+	position: relative;
+	top: 0;
+	right: 150px;
+	z-index: 1;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.ai-alt-wrap .ai-alt-queue-process-top form {
+	margin: 0;
+}
+
 .ai-alt-wrap .ai-alt-table input[type="text"] {
 	width: 100%;
 	max-width: 420px;

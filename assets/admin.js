@@ -259,6 +259,153 @@
 			});
 	}
 
+	function loadMoreQueueRows(trigger) {
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.queueLoadMoreNonce === 'string' ? adminData.queueLoadMoreNonce : '';
+		if (!ajaxUrl || !nonce || !(trigger instanceof HTMLButtonElement)) {
+			return;
+		}
+
+		var view = String(trigger.getAttribute('data-view') || 'active');
+		var status = String(trigger.getAttribute('data-status') || '');
+		var nextPage = Number(trigger.getAttribute('data-next-page') || '1') || 1;
+		var perPage = Number(trigger.getAttribute('data-per-page') || '20') || 20;
+		var tbody = document.getElementById('ai-alt-queue-tbody');
+		if (!(tbody instanceof HTMLTableSectionElement)) {
+			return;
+		}
+
+		trigger.disabled = true;
+		var originalLabel = trigger.textContent || '';
+		trigger.textContent = i18n.loadingMore || 'Loading more...';
+
+		var body = new URLSearchParams();
+		body.append('action', 'ai_alt_queue_load_more_ajax');
+		body.append('_ajax_nonce', nonce);
+		body.append('view', view);
+		body.append('status', status);
+		body.append('page', String(nextPage));
+		body.append('per_page', String(perPage));
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: body.toString()
+		})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function (payload) {
+				if (!payload || payload.success !== true || !payload.data || typeof payload.data.html !== 'string') {
+					throw new Error(i18n.loadMoreError || 'Unable to load more items. Please try again.');
+				}
+
+				var emptyRow = tbody.querySelector('tr td[colspan]');
+				if (emptyRow && emptyRow.parentElement === tbody) {
+					tbody.removeChild(emptyRow.parentElement);
+				}
+
+				tbody.insertAdjacentHTML('beforeend', payload.data.html);
+
+				var hasMore = Boolean(payload.data.has_more);
+				var newNextPage = Number(payload.data.next_page || (nextPage + 1));
+				if (hasMore) {
+					trigger.setAttribute('data-next-page', String(newNextPage));
+					trigger.disabled = false;
+					trigger.textContent = originalLabel;
+					return;
+				}
+
+				var wrap = trigger.closest('.ai-alt-load-more-wrap');
+				if (wrap instanceof HTMLElement) {
+					wrap.remove();
+				}
+			})
+			.catch(function () {
+				trigger.disabled = false;
+				trigger.textContent = originalLabel;
+				window.alert(i18n.loadMoreError || 'Unable to load more items. Please try again.');
+			});
+	}
+
+	function addNoAltImageToQueue(trigger) {
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.queueAddNoAltNonce === 'string' ? adminData.queueAddNoAltNonce : '';
+		if (!ajaxUrl || !nonce || !(trigger instanceof HTMLButtonElement)) {
+			return;
+		}
+
+		var attachmentId = String(trigger.getAttribute('data-attachment-id') || '');
+		if (!attachmentId) {
+			return;
+		}
+
+		var row = trigger.closest('tr');
+		var messageNode = row ? row.querySelector('.ai-alt-no-alt-message') : null;
+		var statusNode = row ? row.querySelector('.ai-alt-no-alt-queue-status') : null;
+
+		trigger.disabled = true;
+		if (messageNode instanceof HTMLElement) {
+			messageNode.textContent = '';
+			messageNode.classList.remove('ai-alt-message-success');
+			messageNode.classList.remove('ai-alt-message-error');
+		}
+
+		var body = new URLSearchParams();
+		body.append('action', 'ai_alt_queue_add_no_alt_ajax');
+		body.append('_ajax_nonce', nonce);
+		body.append('attachment_id', attachmentId);
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: body.toString()
+		})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function (payload) {
+				if (!payload || payload.success !== true) {
+					var err = i18n.queueAddError || 'Unable to add image to queue.';
+					if (payload && payload.data && payload.data.message) {
+						err = String(payload.data.message);
+					}
+					if (messageNode instanceof HTMLElement) {
+						messageNode.textContent = err;
+						messageNode.classList.add('ai-alt-message-error');
+					}
+					trigger.disabled = false;
+					return;
+				}
+
+				trigger.textContent = i18n.queueAddSuccess || 'Added to queue';
+				if (statusNode instanceof HTMLElement) {
+					statusNode.textContent = 'queued';
+				}
+				if (messageNode instanceof HTMLElement) {
+					messageNode.textContent = i18n.queueAddSuccess || 'Added to queue';
+					messageNode.classList.add('ai-alt-message-success');
+				}
+			})
+			.catch(function () {
+				if (messageNode instanceof HTMLElement) {
+					messageNode.textContent = i18n.queueAddError || 'Unable to add image to queue.';
+					messageNode.classList.add('ai-alt-message-error');
+				}
+				trigger.disabled = false;
+			});
+	}
+
 	document.addEventListener('click', function (event) {
 		var target = event.target;
 		if (!(target instanceof HTMLElement)) {
@@ -267,6 +414,18 @@
 
 		var trigger = target.closest('button, input[type="submit"], input[type="button"]');
 		if (!(trigger instanceof HTMLButtonElement) && !(trigger instanceof HTMLInputElement)) {
+			return;
+		}
+
+		if (trigger.classList.contains('ai-alt-load-more')) {
+			event.preventDefault();
+			loadMoreQueueRows(trigger);
+			return;
+		}
+
+		if (trigger.classList.contains('ai-alt-add-no-alt')) {
+			event.preventDefault();
+			addNoAltImageToQueue(trigger);
 			return;
 		}
 
