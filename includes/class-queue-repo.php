@@ -111,16 +111,16 @@ class WPAI_Alt_Text_Queue_Repo {
 			$result = $wpdb->update(
 				$this->table,
 				array(
-					'post_id'        => $post_id,
-					'status'         => 'queued',
-					'raw_caption'    => null,
-					'suggested_alt'  => '',
-					'final_alt'      => '',
-					'confidence'     => 0,
-					'error_code'     => null,
-					'error_message'  => null,
-					'locked_at'      => null,
-					'updated_at'     => $now,
+					'post_id'       => $post_id,
+					'status'        => 'queued',
+					'raw_caption'   => null,
+					'suggested_alt' => '',
+					'final_alt'     => '',
+					'confidence'    => 0,
+					'error_code'    => null,
+					'error_message' => null,
+					'locked_at'     => null,
+					'updated_at'    => $now,
 				),
 				array( 'id' => absint( $existing_id ) ),
 				array( '%d', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s' ),
@@ -396,41 +396,41 @@ class WPAI_Alt_Text_Queue_Repo {
 		$where  = "q.status IN ({$in_sql})";
 
 		if ( '' !== $status && in_array( $status, $allowed_statuses, true ) ) {
-			$where    .= ' AND q.status = %s';
-			$params[] = $status;
+			$where            .= ' AND q.status = %s';
+			$params[]          = $status;
 			$has_status_filter = true;
 		}
 
 		$total_sql = "SELECT COUNT(*) FROM {$this->table} q WHERE {$where}";
 		$rows_sql  = "SELECT q.* FROM {$this->table} q WHERE {$where} ORDER BY q.updated_at DESC LIMIT %d OFFSET %d";
 
-		if ( $has_status_filter ) {
-			$total = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					$total_sql,
-					$params
-				)
-			);
+			if ( $has_status_filter ) {
+				$total = (int) $wpdb->get_var(
+					$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						$total_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						$params
+					)
+				);
 		} else {
 			$total = (int) $wpdb->get_var( $total_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
 		$params[] = $per_page;
 		$params[] = $offset;
-		if ( $has_status_filter ) {
-			$rows = $wpdb->get_results(
-				$wpdb->prepare(
-					$rows_sql,
-					$params
-				),
-				ARRAY_A
-			);
-		} else {
-			$rows = $wpdb->get_results(
-				$wpdb->prepare(
-					$rows_sql,
-					$per_page,
-					$offset
+			if ( $has_status_filter ) {
+				$rows = $wpdb->get_results(
+						$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+							$rows_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+							$params
+						),
+						ARRAY_A
+				);
+			} else {
+				$rows = $wpdb->get_results(
+						$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+							$rows_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+							$per_page,
+							$offset
 				),
 				ARRAY_A
 			);

@@ -9,17 +9,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$rows       = isset( $data['rows'] ) && is_array( $data['rows'] ) ? $data['rows'] : array();
-$total      = isset( $data['total'] ) ? absint( $data['total'] ) : 0;
-$page_num   = isset( $data['page'] ) ? absint( $data['page'] ) : 1;
-$per_page   = isset( $data['per_page'] ) ? absint( $data['per_page'] ) : 20;
-$max_pages  = max( 1, (int) ceil( $total / $per_page ) );
-$has_more   = $page_num < $max_pages;
+$rows         = isset( $data['rows'] ) && is_array( $data['rows'] ) ? $data['rows'] : array();
+$total        = isset( $data['total'] ) ? absint( $data['total'] ) : 0;
+$page_num     = isset( $data['page'] ) ? absint( $data['page'] ) : 1;
+$per_page     = isset( $data['per_page'] ) ? absint( $data['per_page'] ) : 20;
+$max_pages    = max( 1, (int) ceil( $total / $per_page ) );
+$has_more     = $page_num < $max_pages;
 $total_images = isset( $total_images ) ? absint( $total_images ) : 0;
-$status     = isset( $status ) ? sanitize_key( (string) $status ) : '';
-$view       = isset( $view ) && in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
-$is_history = 'history' === $view;
-$is_no_alt  = 'no_alt' === $view;
+$status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
+$view         = isset( $view ) && in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
+$is_history   = 'history' === $view;
+$is_no_alt    = 'no_alt' === $view;
 ?>
 <div class="wrap ai-alt-wrap">
 	<h1><?php esc_html_e( 'Dynamic Alt Tags Queue', 'dynamic-alt-tags' ); ?></h1>
@@ -39,9 +39,45 @@ $is_no_alt  = 'no_alt' === $view;
 	<?php endif; ?>
 
 	<h2 class="nav-tab-wrapper">
-		<a class="nav-tab <?php echo $is_history || $is_no_alt ? '' : 'nav-tab-active'; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'ai-alt-text-queue', 'view' => 'active' ), admin_url( 'upload.php' ) ) ); ?>"><?php esc_html_e( 'Active Queue', 'dynamic-alt-tags' ); ?></a>
-		<a class="nav-tab <?php echo $is_history ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'ai-alt-text-queue', 'view' => 'history' ), admin_url( 'upload.php' ) ) ); ?>"><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></a>
-		<a class="nav-tab <?php echo $is_no_alt ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'ai-alt-text-queue', 'view' => 'no_alt' ), admin_url( 'upload.php' ) ) ); ?>"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
+		<a class="nav-tab <?php echo $is_history || $is_no_alt ? '' : 'nav-tab-active'; ?>" href="
+		<?php
+		echo esc_url(
+			add_query_arg(
+				array(
+					'page' => 'ai-alt-text-queue',
+					'view' => 'active',
+				),
+				admin_url( 'upload.php' )
+			)
+		);
+		?>
+		"><?php esc_html_e( 'Active Queue', 'dynamic-alt-tags' ); ?></a>
+		<a class="nav-tab <?php echo $is_history ? 'nav-tab-active' : ''; ?>" href="
+		<?php
+		echo esc_url(
+			add_query_arg(
+				array(
+					'page' => 'ai-alt-text-queue',
+					'view' => 'history',
+				),
+				admin_url( 'upload.php' )
+			)
+		);
+		?>
+		"><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></a>
+		<a class="nav-tab <?php echo $is_no_alt ? 'nav-tab-active' : ''; ?>" href="
+		<?php
+		echo esc_url(
+			add_query_arg(
+				array(
+					'page' => 'ai-alt-text-queue',
+					'view' => 'no_alt',
+				),
+				admin_url( 'upload.php' )
+			)
+		);
+		?>
+		"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
 	</h2>
 
 	<?php if ( isset( $_GET['notice'] ) && 'queue_updated' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
@@ -89,8 +125,11 @@ $is_no_alt  = 'no_alt' === $view;
 		</div>
 	<?php endif; ?>
 
-	<?php if ( isset( $_GET['notice'] ) && 'queue_error' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
-		<?php $queue_error_msg = isset( $_GET['queue_msg'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['queue_msg'] ) ) ) : __( 'Unable to apply queue action.', 'dynamic-alt-tags' ); ?>
+<?php if ( isset( $_GET['notice'] ) && 'queue_error' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
+	<?php
+		$queue_msg_raw   = isset( $_GET['queue_msg'] ) ? wp_unslash( $_GET['queue_msg'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+	$queue_error_msg = '' !== $queue_msg_raw ? sanitize_text_field( rawurldecode( (string) $queue_msg_raw ) ) : __( 'Unable to apply queue action.', 'dynamic-alt-tags' );
+	?>
 		<div class="notice notice-error is-dismissible">
 			<p><?php echo esc_html( $queue_error_msg ); ?></p>
 		</div>
@@ -99,11 +138,11 @@ $is_no_alt  = 'no_alt' === $view;
 	<p>
 		<?php
 		if ( $is_history ) {
-			printf( esc_html__( 'Total history items: %d', 'dynamic-alt-tags' ), $total );
+			echo esc_html( sprintf( __( 'Total history items: %d', 'dynamic-alt-tags' ), $total ) );
 		} elseif ( $is_no_alt ) {
-			printf( esc_html__( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total );
+			echo esc_html( sprintf( __( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total ) );
 		} else {
-			printf( esc_html__( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images );
+			echo esc_html( sprintf( __( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images ) );
 		}
 		?>
 	</p>

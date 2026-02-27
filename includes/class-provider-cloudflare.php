@@ -56,7 +56,7 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			$headers['Authorization'] = 'Bearer ' . $token;
 		}
 
-		$payload = array(
+		$payload      = array(
 			'image_url' => esc_url_raw( $image_url ),
 			'context'   => array(
 				'attachment_title' => isset( $context['attachment_title'] ) ? sanitize_text_field( (string) $context['attachment_title'] ) : '',
@@ -77,7 +77,7 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			if ( $attachment_id > 0 ) {
 				$direct_payload = $this->build_direct_image_payload( $attachment_id );
 				if ( ! is_wp_error( $direct_payload ) ) {
-					$payload = array_merge( $payload, $direct_payload );
+					$payload      = array_merge( $payload, $direct_payload );
 					$request_mode = 'bytes';
 				}
 			}
@@ -109,8 +109,8 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		$data = json_decode( $body, true );
 
 		if ( $code < 200 || $code >= 300 ) {
-			$detail = '';
-			$fetch_url = esc_url_raw( $image_url );
+			$detail       = '';
+			$fetch_url    = esc_url_raw( $image_url );
 			$fetch_status = 0;
 
 			if ( is_array( $data ) ) {

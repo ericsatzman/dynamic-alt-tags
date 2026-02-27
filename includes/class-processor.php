@@ -70,11 +70,11 @@ class WPAI_Alt_Text_Processor {
 	 * @return int Processed count.
 	 */
 	public function process_batch( $limit = 10 ) {
-		$jobs       = $this->queue_repo->claim_jobs( $limit );
-		$processed  = 0;
-		$options    = $this->settings->get_options();
-		$overwrite  = ! empty( $options['overwrite_existing'] );
-		$min_conf   = isset( $options['min_confidence'] ) ? (float) $options['min_confidence'] : 0.7;
+		$jobs        = $this->queue_repo->claim_jobs( $limit );
+		$processed   = 0;
+		$options     = $this->settings->get_options();
+		$overwrite   = ! empty( $options['overwrite_existing'] );
+		$min_conf    = isset( $options['min_confidence'] ) ? (float) $options['min_confidence'] : 0.7;
 		$need_review = ! empty( $options['require_review'] );
 
 		foreach ( $jobs as $job ) {

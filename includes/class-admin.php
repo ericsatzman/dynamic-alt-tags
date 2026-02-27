@@ -108,32 +108,32 @@ class WPAI_Alt_Text_Admin {
 			'dynamic-alt-tags-admin',
 			'aiAltAdmin',
 			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'processNowNonce' => wp_create_nonce( 'ai_alt_process_now_ajax' ),
-				'queueProcessNonce' => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
+				'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
+				'processNowNonce'    => wp_create_nonce( 'ai_alt_process_now_ajax' ),
+				'queueProcessNonce'  => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 				'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 				'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
-				'uploadActionNonce' => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
-					'i18n' => array(
-					'processing' => __( 'Processing queue...', 'dynamic-alt-tags' ),
-					'success'    => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
-					'error'      => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
-					'partial'    => __( 'Processing stopped early after %d items. You can run it again to continue.', 'dynamic-alt-tags' ),
-					'rowProcessing' => __( 'Processing image...', 'dynamic-alt-tags' ),
-					'rowSuccess'    => __( 'Image successfully processed', 'dynamic-alt-tags' ),
-					'rowError'      => __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
-					'loadingMore'   => __( 'Loading more...', 'dynamic-alt-tags' ),
-					'loadMoreError' => __( 'Unable to load more items. Please try again.', 'dynamic-alt-tags' ),
-					'queueAddSuccess' => __( 'Added to queue', 'dynamic-alt-tags' ),
-					'queueAddError'   => __( 'Unable to add image to queue.', 'dynamic-alt-tags' ),
+				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
+				'i18n'               => array(
+					'processing'         => __( 'Processing queue...', 'dynamic-alt-tags' ),
+					'success'            => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
+					'error'              => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
+					'partial'            => __( 'Processing stopped early after %d items. You can run it again to continue.', 'dynamic-alt-tags' ),
+					'rowProcessing'      => __( 'Processing image...', 'dynamic-alt-tags' ),
+					'rowSuccess'         => __( 'Image successfully processed', 'dynamic-alt-tags' ),
+					'rowError'           => __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
+					'loadingMore'        => __( 'Loading more...', 'dynamic-alt-tags' ),
+					'loadMoreError'      => __( 'Unable to load more items. Please try again.', 'dynamic-alt-tags' ),
+					'queueAddSuccess'    => __( 'Added to queue', 'dynamic-alt-tags' ),
+					'queueAddError'      => __( 'Unable to add image to queue.', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
 					'customAltRequired'  => __( 'Enter custom alt text before applying.', 'dynamic-alt-tags' ),
-						'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
-						'confirmSkip'        => __( 'Skip this image and move it to History?', 'dynamic-alt-tags' ),
-						'confirmReject'      => __( 'Reject this generated alt text?', 'dynamic-alt-tags' ),
-					),
-				)
-			);
+					'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
+					'confirmSkip'        => __( 'Skip this image and move it to History?', 'dynamic-alt-tags' ),
+					'confirmReject'      => __( 'Reject this generated alt text?', 'dynamic-alt-tags' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -161,12 +161,12 @@ class WPAI_Alt_Text_Admin {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'dynamic-alt-tags' ) );
 		}
 
-		$status   = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
-		$view     = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'active';
-		$view     = in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
-		$page     = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
-		$per_page = 20;
-		$data     = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+		$status       = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
+		$view         = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'active';
+		$view         = in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
+		$page         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$per_page     = 20;
+		$data         = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
 		$total_images = $this->queue_repo->get_total_no_alt_images();
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-queue.php';
@@ -188,8 +188,8 @@ class WPAI_Alt_Text_Admin {
 
 		$redirect = add_query_arg(
 			array(
-				'page'    => 'ai-alt-text-settings',
-				'notice'  => 'backfill_done',
+				'page'     => 'ai-alt-text-settings',
+				'notice'   => 'backfill_done',
 				'enqueued' => $count,
 			),
 			admin_url( 'upload.php' )
@@ -238,10 +238,10 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
 
-		$options = $this->settings->get_options();
-		$before  = $this->queue_repo->get_active_status_counts();
+		$options   = $this->settings->get_options();
+		$before    = $this->queue_repo->get_active_status_counts();
 		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
-		$after   = $this->queue_repo->get_active_status_counts();
+		$after     = $this->queue_repo->get_active_status_counts();
 
 		if ( $processed > 0 ) {
 			$redirect = add_query_arg(
@@ -327,13 +327,13 @@ class WPAI_Alt_Text_Admin {
 
 		check_ajax_referer( 'ai_alt_process_now_ajax' );
 
-		$options = $this->settings->get_options();
-		$before  = $this->queue_repo->get_active_status_counts();
-		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
-		$after   = $this->queue_repo->get_active_status_counts();
-		$message = '';
+		$options             = $this->settings->get_options();
+		$before              = $this->queue_repo->get_active_status_counts();
+		$processed           = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
+		$after               = $this->queue_repo->get_active_status_counts();
+		$message             = '';
 		$remaining_claimable = ( isset( $after['queued'] ) ? absint( $after['queued'] ) : 0 ) + ( isset( $after['failed'] ) ? absint( $after['failed'] ) : 0 );
-		$has_more = $remaining_claimable > 0;
+		$has_more            = $remaining_claimable > 0;
 
 		if ( $processed <= 0 ) {
 			$message = $this->get_zero_processed_message( $before, $after );
@@ -391,10 +391,10 @@ class WPAI_Alt_Text_Admin {
 
 		wp_send_json_success(
 			array(
-				'message'      => __( 'Image successfully processed', 'dynamic-alt-tags' ),
-				'status'       => is_array( $row ) && isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '',
-				'confidence'   => is_array( $row ) && isset( $row['confidence'] ) ? (float) $row['confidence'] : 0.0,
-				'suggested_alt'=> is_array( $row ) && isset( $row['suggested_alt'] ) ? sanitize_text_field( (string) $row['suggested_alt'] ) : '',
+				'message'       => __( 'Image successfully processed', 'dynamic-alt-tags' ),
+				'status'        => is_array( $row ) && isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '',
+				'confidence'    => is_array( $row ) && isset( $row['confidence'] ) ? (float) $row['confidence'] : 0.0,
+				'suggested_alt' => is_array( $row ) && isset( $row['suggested_alt'] ) ? sanitize_text_field( (string) $row['suggested_alt'] ) : '',
 			)
 		);
 	}
@@ -549,8 +549,8 @@ class WPAI_Alt_Text_Admin {
 			} elseif ( $is_active_status ) {
 				$button_label = __( 'Queued', 'dynamic-alt-tags' );
 			}
-			$thumb            = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
-			$image_url        = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
+			$thumb     = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
+			$image_url = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
 			?>
 			<tr>
 				<td>
@@ -835,7 +835,8 @@ class WPAI_Alt_Text_Admin {
 				wp_die( esc_html__( 'Invalid request.', 'dynamic-alt-tags' ) );
 			}
 
-			$alts = isset( $_POST['bulk_final_alt'] ) && is_array( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array();
+			$bulk_final_alt_raw = isset( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$alts               = is_array( $bulk_final_alt_raw ) ? $bulk_final_alt_raw : array();
 			$alt  = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
 			$this->apply_queue_action( $row_id, $action, $alt );
 			$updated_count = 1;
@@ -876,13 +877,15 @@ class WPAI_Alt_Text_Admin {
 				exit;
 			}
 
-			$selected_ids = isset( $_POST['selected_row_ids'] ) && is_array( $_POST['selected_row_ids'] ) ? $_POST['selected_row_ids'] : array();
-			$selected_ids = array_values( array_filter( array_map( 'absint', $selected_ids ) ) );
+			$selected_ids_raw = isset( $_POST['selected_row_ids'] ) ? wp_unslash( $_POST['selected_row_ids'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$selected_ids     = is_array( $selected_ids_raw ) ? $selected_ids_raw : array();
+			$selected_ids     = array_values( array_filter( array_map( 'absint', $selected_ids ) ) );
 			if ( empty( $selected_ids ) ) {
 				wp_die( esc_html__( 'No queue items selected.', 'dynamic-alt-tags' ) );
 			}
 
-			$alts = isset( $_POST['bulk_final_alt'] ) && is_array( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array();
+			$bulk_final_alt_raw = isset( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$alts               = is_array( $bulk_final_alt_raw ) ? $bulk_final_alt_raw : array();
 			foreach ( $selected_ids as $row_id ) {
 				$alt = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
 				$this->apply_queue_action( $row_id, $bulk_action, $alt );

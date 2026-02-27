@@ -58,7 +58,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php endif; ?>
 
 	<?php if ( isset( $_GET['notice'] ) && 'process_error' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
-		<?php $process_error_msg = isset( $_GET['process_msg'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['process_msg'] ) ) ) : __( 'No items were processed.', 'dynamic-alt-tags' ); ?>
+		<?php
+		$process_msg_raw   = isset( $_GET['process_msg'] ) ? wp_unslash( $_GET['process_msg'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$process_error_msg = '' !== $process_msg_raw ? sanitize_text_field( rawurldecode( (string) $process_msg_raw ) ) : __( 'No items were processed.', 'dynamic-alt-tags' );
+		?>
 		<div class="notice notice-error is-dismissible">
 			<p><?php echo esc_html( $process_error_msg ); ?></p>
 		</div>

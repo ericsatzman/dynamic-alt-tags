@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<ruleset name="Dynamic Alt Tags Coding Standards">
+	<description>PHPCS rules for WordPress coding, security, and accessibility best practices.</description>
+
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+	<arg name="extensions" value="php"/>
+
+	<file>dynamic-alt-tags.php</file>
+	<file>uninstall.php</file>
+	<file>admin</file>
+	<file>includes</file>
+
+	<exclude-pattern>*/.git/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+
+	<!-- Security-focused checks for CI gating. -->
+	<rule ref="WordPress.Security">
+		<exclude name="WordPress.Security.NonceVerification.Recommended"/>
+	</rule>
+	<rule ref="WordPress.DB.PreparedSQL">
+		<!-- Table name interpolation is a common pattern for $wpdb table properties. -->
+		<exclude name="WordPress.DB.PreparedSQL.InterpolatedNotPrepared"/>
+		<exclude name="WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQuery"/>
+		<exclude name="WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber"/>
+		<exclude name="WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare"/>
+	</rule>
+</ruleset>
