@@ -77,7 +77,7 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
 			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
-			'direct_upload_mode'  => __( 'Direct Upload Mode (Send Image Bytes)', 'dynamic-alt-tags' ),
+				'direct_upload_mode'  => __( 'Direct Upload Mode - Send Image Bytes (recommended)', 'dynamic-alt-tags' ),
 			'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
 			'require_review'      => __( 'Require Manual Review', 'dynamic-alt-tags' ),
 			'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
