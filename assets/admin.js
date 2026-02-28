@@ -60,6 +60,20 @@
 		customWrap.style.display = isCustom ? 'block' : 'none';
 	}
 
+	function hideUploadActionHint(select) {
+		if (!(select instanceof HTMLSelectElement)) {
+			return;
+		}
+
+		var container = select.closest('tr, .compat-field, .setting, .attachment-details');
+		var hintNode = container ? container.querySelector('.ai-alt-upload-action-hint') : null;
+		if (!(hintNode instanceof HTMLElement)) {
+			return;
+		}
+
+		hintNode.style.display = 'none';
+	}
+
 	function applyUploadAction(trigger, select, customInput, resultNode) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -151,11 +165,12 @@
 						setAltFieldValue(document, altText, attachmentId);
 					}
 
-				if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
-					customInput.value = '';
-				}
-				setUploadApplyVisibility(select);
-			})
+					if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
+						customInput.value = '';
+					}
+					setUploadApplyVisibility(select);
+					hideUploadActionHint(select);
+				})
 			.catch(function () {
 				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
 				resultNode.classList.add('ai-alt-message-error');

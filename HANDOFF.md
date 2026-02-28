@@ -310,3 +310,19 @@ Goal: improve perceived speed and responsiveness of admin workflows without requ
   - inline success/error messages or toasts,
   - optional sticky controls if later implemented.
 - If implemented carefully, desktop width presentation should remain visually consistent while feeling faster.
+
+## 13) Attachment Details UX Notes (Latest)
+
+### Review helper text visibility
+- In Attachment Details review UI, helper text:
+  - `Choose an action to finalize this uploaded image suggestion.`
+- Is shown only when review is still active.
+- It is hidden for final statuses (`approved`, `rejected`, `skipped`) on server-rendered load.
+- It is also hidden client-side immediately after a successful apply action (so users do not need a refresh to see it disappear).
+
+### Action confirmation copy style
+- Upload-review action confirmations were updated to plain user-facing sentence style (no `Dynamic Alt Tags:` prefix).
+- Example:
+  - Old: `Dynamic Alt Tags: suggested alt text approved and applied.`
+  - New: `The suggested alt text is approved and applied.`
+- Similar wording style was applied to generate/reject/skip/custom messages in the same action handler.
