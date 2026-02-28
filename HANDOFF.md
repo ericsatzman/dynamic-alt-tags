@@ -270,3 +270,43 @@ For easier plugin diagnostics, Worker should include (on errors where possible):
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-queue-repo.php`
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-rest.php`
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-settings.php`
+
+## 12) UI Responsiveness Recommendations (Settings + Queue)
+
+Goal: improve perceived speed and responsiveness of admin workflows without requiring major visual redesign.
+
+### Recommended improvements
+1. **Optimistic row updates**
+- For queue row actions (`Process`, `Add to Queue`, approve/reject/skip), update visible row state immediately and roll back only if AJAX fails.
+
+2. **Non-blocking feedback**
+- Replace blocking `window.alert()` usage with inline messages/toasts.
+- Keep action context local to the row or panel where the action happened.
+
+3. **Consistent loading states**
+- Disable only the clicked button while a request is in-flight.
+- Swap button text to loading state (for example: `Processing...`, `Loading...`) and restore on completion.
+
+4. **Avoid full page redirects where possible**
+- Prefer AJAX updates and notices rendered in-page over redirect-based feedback loops, especially on queue actions.
+
+5. **Live queue freshness**
+- Poll lightweight status counts (`queued`, `processing`, `failed`) and refresh badges/summary text without reload.
+
+6. **Preload next chunk**
+- After initial queue render, fetch next page payload in background so `View more images` feels instant.
+
+7. **Render-performance guardrails**
+- Keep row updates incremental and scoped.
+- Avoid repeated large HTML replacements in the table body when only one row changed.
+
+8. **Long-run progress clarity**
+- For `Process Queue Now`, continue to show progress with processed totals and clear end-state messaging.
+
+### Desktop UI impact expectations
+- Most recommendations are **behavioral only** and should not materially change desktop layout.
+- Visible desktop changes should be limited to:
+  - loading states/spinners/text on action controls,
+  - inline success/error messages or toasts,
+  - optional sticky controls if later implemented.
+- If implemented carefully, desktop width presentation should remain visually consistent while feeling faster.
