@@ -42,7 +42,11 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		$options    = $this->settings->get_options();
 		$worker_url = isset( $options['worker_url'] ) ? trim( (string) $options['worker_url'] ) : '';
 		$token      = isset( $options['cloudflare_token'] ) ? trim( (string) $options['cloudflare_token'] ) : '';
-		$use_direct = ! empty( $options['direct_upload_mode'] );
+		$use_url_mode = ! empty( $options['use_url_mode'] );
+		if ( ! array_key_exists( 'use_url_mode', $options ) && array_key_exists( 'direct_upload_mode', $options ) ) {
+			$use_url_mode = empty( $options['direct_upload_mode'] );
+		}
+		$use_direct = ! $use_url_mode;
 
 		if ( '' === $worker_url ) {
 			return new WP_Error( 'ai_alt_missing_worker_url', __( 'Cloudflare Worker URL is not configured.', 'dynamic-alt-tags' ) );

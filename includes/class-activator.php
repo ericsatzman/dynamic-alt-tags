@@ -90,15 +90,16 @@ class WPAI_Alt_Text_Activator {
 	 * @return void
 	 */
 	private static function set_default_options() {
-		$defaults = array(
-			'provider'            => 'cloudflare',
-			'cloudflare_account'  => '',
-			'cloudflare_token'    => '',
-			'worker_url'          => '',
-			'batch_size'          => 10,
-			'min_confidence'      => 0.70,
-			'overwrite_existing'  => 0,
-			'require_review'      => 1,
+			$defaults = array(
+				'provider'            => 'cloudflare',
+				'cloudflare_account'  => '',
+				'cloudflare_token'    => '',
+				'worker_url'          => '',
+				'use_url_mode'        => 0,
+				'batch_size'          => 10,
+				'min_confidence'      => 0.70,
+				'overwrite_existing'  => 0,
+				'require_review'      => 1,
 			'keep_data_on_delete' => 0,
 		);
 
