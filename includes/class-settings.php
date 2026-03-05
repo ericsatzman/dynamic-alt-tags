@@ -32,6 +32,8 @@ class WPAI_Alt_Text_Settings {
 			'use_url_mode'        => 0,
 			'batch_size'          => 10,
 			'min_confidence'      => 0.70,
+			'auto_apply_new_uploads' => 0,
+			'sync_title_from_alt' => 1,
 			'overwrite_existing'  => 0,
 			'require_review'      => 1,
 			'keep_data_on_delete' => 0,
@@ -84,10 +86,12 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
 			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
-				'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
-				'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
-				'require_review'      => __( 'Require Manual Review', 'dynamic-alt-tags' ),
-				'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
+					'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
+					'auto_apply_new_uploads' => __( 'Auto-Apply Alt Text for New Uploads', 'dynamic-alt-tags' ),
+					'sync_title_from_alt' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
+					'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
+					'require_review'      => __( 'Require Manual Review', 'dynamic-alt-tags' ),
+					'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
 		);
 
 		foreach ( $fields as $field_id => $label ) {
@@ -149,6 +153,8 @@ class WPAI_Alt_Text_Settings {
 		$current['min_confidence'] = max( 0.00, min( 1.00, $current['min_confidence'] ) );
 
 		$current['use_url_mode']        = ! empty( $input['use_url_mode'] ) ? 1 : 0;
+		$current['auto_apply_new_uploads'] = ! empty( $input['auto_apply_new_uploads'] ) ? 1 : 0;
+		$current['sync_title_from_alt'] = ! empty( $input['sync_title_from_alt'] ) ? 1 : 0;
 		$current['overwrite_existing']  = ! empty( $input['overwrite_existing'] ) ? 1 : 0;
 		$current['require_review']      = ! empty( $input['require_review'] ) ? 1 : 0;
 		$current['keep_data_on_delete'] = ! empty( $input['keep_data_on_delete'] ) ? 1 : 0;
@@ -172,7 +178,7 @@ class WPAI_Alt_Text_Settings {
 
 		$name = self::OPTION_KEY . '[' . $id . ']';
 
-		if ( in_array( $id, array( 'use_url_mode', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
+		if ( in_array( $id, array( 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
 				'<label><input type="checkbox" name="%1$s" value="1" %2$s /></label>',
 				esc_attr( $name ),
@@ -181,6 +187,10 @@ class WPAI_Alt_Text_Settings {
 
 			if ( 'use_url_mode' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, the plugin sends image URLs and the Worker fetches images remotely. Leave unchecked to use Direct Upload Mode (default, recommended).', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'auto_apply_new_uploads' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, newly uploaded images get AI alt text applied automatically after generation.', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'sync_title_from_alt' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, applying alt text will also set the attachment title to the same value.', 'dynamic-alt-tags' ) . '</p>';
 			}
 			return;
 		}

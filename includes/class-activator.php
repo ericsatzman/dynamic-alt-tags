@@ -94,14 +94,16 @@ class WPAI_Alt_Text_Activator {
 				'provider'            => 'cloudflare',
 				'cloudflare_account'  => '',
 				'cloudflare_token'    => '',
-				'worker_url'          => '',
-				'use_url_mode'        => 0,
-				'batch_size'          => 10,
-				'min_confidence'      => 0.70,
-				'overwrite_existing'  => 0,
-				'require_review'      => 1,
-			'keep_data_on_delete' => 0,
-		);
+					'worker_url'          => '',
+					'use_url_mode'        => 0,
+					'batch_size'          => 10,
+					'min_confidence'      => 0.70,
+					'auto_apply_new_uploads' => 0,
+					'sync_title_from_alt' => 1,
+					'overwrite_existing'  => 0,
+					'require_review'      => 1,
+				'keep_data_on_delete' => 0,
+			);
 
 		$current = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $current ) ) {
