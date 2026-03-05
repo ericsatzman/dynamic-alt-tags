@@ -74,6 +74,31 @@
 		hintNode.style.display = 'none';
 	}
 
+	function clearPluginPageNotices() {
+		var url = new URL(window.location.href);
+		var page = String(url.searchParams.get('page') || '');
+		var isPluginPage = page === 'ai-alt-text-settings' || page === 'ai-alt-text-queue';
+		if (!isPluginPage) {
+			return;
+		}
+
+		var noticeSelectors = [
+			'.notice',
+			'.update-nag',
+			'div.updated',
+			'div.error'
+		];
+
+		noticeSelectors.forEach(function (selector) {
+			var nodes = document.querySelectorAll(selector);
+			nodes.forEach(function (node) {
+				if (node instanceof HTMLElement) {
+					node.remove();
+				}
+			});
+		});
+	}
+
 	function applyUploadAction(trigger, select, customInput, resultNode) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -577,6 +602,8 @@
 		});
 
 		document.addEventListener('DOMContentLoaded', function () {
+			clearPluginPageNotices();
+
 			var selects = document.querySelectorAll('select.ai-alt-upload-action');
 			selects.forEach(function (select) {
 				if (select instanceof HTMLSelectElement) {
