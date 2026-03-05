@@ -223,6 +223,15 @@ class WPAI_Alt_Text_Processor {
 		}
 
 		update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt_text );
+		$options = $this->settings->get_options();
+		if ( ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] ) ) {
+			wp_update_post(
+				array(
+					'ID'         => $attachment_id,
+					'post_title' => $alt_text,
+				)
+			);
+		}
 		update_post_meta( $attachment_id, '_ai_alt_last_generated_at', current_time( 'mysql' ) );
 		update_post_meta( $attachment_id, '_ai_alt_source_provider', 'cloudflare' );
 		update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
