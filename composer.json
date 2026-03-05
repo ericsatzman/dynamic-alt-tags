@@ -1,6 +1,7 @@
 {
   "name": "ericsatzman/dynamic-alt-tags",
   "description": "WordPress plugin coding standards tooling for Dynamic Alt Tags.",
+  "license": "GPL-2.0-or-later",
   "type": "project",
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
