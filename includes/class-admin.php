@@ -509,6 +509,7 @@ class WPAI_Alt_Text_Admin {
 					<td>
 						<?php if ( ! $is_history ) : ?>
 							<button class="button button-primary" type="submit" name="single_action" value="<?php echo esc_attr( 'approve|' . $row_id ); ?>"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></button>
+							<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'skip|' . $row_id ); ?>"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></button>
 							<?php if ( in_array( $status, array( 'queued', 'failed', 'generated' ), true ) ) : ?>
 								<button class="button ai-alt-row-process" type="button" data-row-id="<?php echo esc_attr( (string) $row_id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'ai_alt_queue_process_ajax' ) ); ?>"><?php esc_html_e( 'Retrieve Alt Text', 'dynamic-alt-tags' ); ?></button>
 							<?php endif; ?>
@@ -517,7 +518,6 @@ class WPAI_Alt_Text_Admin {
 						<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>
 					<?php endif; ?>
 					<?php if ( ! $is_history ) : ?>
-						<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'skip|' . $row_id ); ?>"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></button>
 						<div class="ai-alt-progress-wrap ai-alt-row-progress-wrap" hidden>
 							<div class="ai-alt-progress-bar ai-alt-row-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
 						</div>
