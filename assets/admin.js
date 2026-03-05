@@ -99,6 +99,31 @@
 		});
 	}
 
+	function placeRetrieveButtons() {
+		var buttons = document.querySelectorAll('.ai-alt-upload-retrieve');
+		buttons.forEach(function (button) {
+			if (!(button instanceof HTMLButtonElement || button instanceof HTMLInputElement)) {
+				return;
+			}
+
+			var sourceRow = button.closest('tr, .setting, .compat-field');
+			if (!(sourceRow instanceof HTMLElement)) {
+				return;
+			}
+
+			var wrap = sourceRow.querySelector('.ai-alt-upload-retrieve-wrap');
+			if (!(wrap instanceof HTMLElement)) {
+				return;
+			}
+
+			sourceRow.classList.add('ai-alt-upload-row');
+			sourceRow.style.removeProperty('display');
+			wrap.style.removeProperty('margin-top');
+			wrap.style.removeProperty('margin-left');
+			wrap.style.removeProperty('clear');
+		});
+	}
+
 	function applyUploadAction(trigger, select, customInput, resultNode) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -196,6 +221,80 @@
 					setUploadApplyVisibility(select);
 					hideUploadActionHint(select);
 				})
+			.catch(function () {
+				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
+				resultNode.classList.add('ai-alt-message-error');
+			})
+			.finally(function () {
+				if (trigger instanceof HTMLInputElement || trigger instanceof HTMLButtonElement) {
+					trigger.disabled = false;
+				}
+			});
+	}
+
+	function retrieveUploadAltText(trigger, resultNode) {
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var attachmentId = trigger && trigger.getAttribute ? String(trigger.getAttribute('data-attachment-id') || '') : '';
+		var nonce = typeof adminData.uploadActionNonce === 'string' ? adminData.uploadActionNonce : '';
+		if (!nonce && trigger && trigger.getAttribute) {
+			nonce = String(trigger.getAttribute('data-nonce') || '');
+		}
+
+		if (!(resultNode instanceof HTMLElement) || !attachmentId || !ajaxUrl || !nonce) {
+			return;
+		}
+
+		if (trigger instanceof HTMLInputElement || trigger instanceof HTMLButtonElement) {
+			trigger.disabled = true;
+		}
+		resultNode.textContent = '';
+		resultNode.classList.remove('ai-alt-message-error');
+		resultNode.classList.remove('ai-alt-message-success');
+
+		var body = new URLSearchParams();
+		body.append('action', 'ai_alt_upload_action_ajax');
+		body.append('_ajax_nonce', nonce);
+		body.append('attachment_id', attachmentId);
+		body.append('review_action', 'generate');
+		body.append('custom_alt', '');
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: body.toString()
+		})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function (payload) {
+				if (!payload || payload.success !== true) {
+					var errorMessage = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
+					if (payload && payload.data && payload.data.message) {
+						errorMessage = String(payload.data.message);
+					}
+					resultNode.textContent = errorMessage;
+					resultNode.classList.add('ai-alt-message-error');
+					return;
+				}
+
+				var message = payload.data && payload.data.message ? String(payload.data.message) : 'Action applied.';
+				resultNode.textContent = message;
+				resultNode.classList.add('ai-alt-message-success');
+
+				if (payload.data && typeof payload.data.alt_text !== 'undefined') {
+					var altText = String(payload.data.alt_text || '');
+					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
+					if (container instanceof HTMLElement) {
+						setAltFieldValue(container, altText, attachmentId);
+					}
+					setAltFieldValue(document, altText, attachmentId);
+				}
+			})
 			.catch(function () {
 				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
 				resultNode.classList.add('ai-alt-message-error');
@@ -537,6 +636,17 @@
 				}
 			}
 
+				if (trigger.classList.contains('ai-alt-upload-retrieve')) {
+					event.preventDefault();
+					var retrieveRow = target.closest('tr, .compat-field, .setting, .attachment-details');
+					var retrieveResultNode = retrieveRow ? retrieveRow.querySelector('.ai-alt-upload-action-result') : null;
+					if (!(retrieveResultNode instanceof HTMLElement)) {
+						retrieveResultNode = document.querySelector('.ai-alt-upload-action-result');
+					}
+					retrieveUploadAltText(trigger, retrieveResultNode);
+					return;
+				}
+
 				if (trigger.classList.contains('ai-alt-upload-apply')) {
 					event.preventDefault();
 					var row = target.closest('tr, .compat-field, .setting, .attachment-details');
@@ -603,6 +713,7 @@
 
 		document.addEventListener('DOMContentLoaded', function () {
 			clearPluginPageNotices();
+			placeRetrieveButtons();
 
 			var selects = document.querySelectorAll('select.ai-alt-upload-action');
 			selects.forEach(function (select) {
@@ -636,6 +747,19 @@
 				window.history.replaceState({}, document.title, url.toString());
 			}
 		}
+	});
+
+	var attachmentObserver = new MutationObserver(function () {
+		placeRetrieveButtons();
+	});
+
+	attachmentObserver.observe(document.documentElement, {
+		childList: true,
+		subtree: true
+	});
+
+	window.addEventListener('resize', function () {
+		placeRetrieveButtons();
 	});
 
 	document.addEventListener('submit', function (event) {
