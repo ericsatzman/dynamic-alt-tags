@@ -480,6 +480,15 @@ class WPAI_Alt_Text_Admin {
 			$suggested     = isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
 			$final_alt     = isset( $row['final_alt'] ) ? (string) $row['final_alt'] : '';
 			$display_alt   = $is_history && '' !== trim( $final_alt ) ? $final_alt : $suggested;
+			$processed_on  = '';
+			if ( isset( $row['updated_at'] ) && '' !== trim( (string) $row['updated_at'] ) ) {
+				try {
+					$processed_dt = new DateTime( (string) $row['updated_at'], wp_timezone() );
+					$processed_on = $processed_dt->format( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) . ' T' );
+				} catch ( Exception $e ) {
+					$processed_on = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (string) $row['updated_at'], false );
+				}
+			}
 			$thumb         = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
 			$image_url     = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
 			$existing_alt  = $attachment_id ? get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) : '';
@@ -493,15 +502,29 @@ class WPAI_Alt_Text_Admin {
 					</th>
 				<?php endif; ?>
 				<td>
-					<?php echo $thumb ? wp_kses_post( $thumb ) : esc_html__( 'N/A', 'dynamic-alt-tags' ); ?>
+					<?php if ( $thumb ) : ?>
+						<?php if ( ! empty( $image_url ) ) : ?>
+							<a href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo wp_kses_post( $thumb ); ?></a>
+						<?php else : ?>
+							<?php echo wp_kses_post( $thumb ); ?>
+						<?php endif; ?>
+					<?php else : ?>
+						<?php esc_html_e( 'N/A', 'dynamic-alt-tags' ); ?>
+					<?php endif; ?>
 					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 				</td>
 				<td><code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code></td>
 				<td class="ai-alt-row-confidence"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
-				<td><?php echo '' !== $existing_alt ? esc_html( $existing_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?></td>
 				<td>
 					<?php if ( $is_history ) : ?>
-						<?php echo esc_html( $display_alt ); ?>
+						<?php echo '' !== trim( $display_alt ) ? esc_html( $display_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?>
+					<?php else : ?>
+						<?php echo '' !== $existing_alt ? esc_html( $existing_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?>
+					<?php endif; ?>
+				</td>
+				<td>
+					<?php if ( $is_history ) : ?>
+						<?php echo '' !== $processed_on ? esc_html( $processed_on ) : '-'; ?>
 					<?php else : ?>
 						<input type="text" class="regular-text ai-alt-row-suggested" name="bulk_final_alt[<?php echo esc_attr( (string) $row_id ); ?>]" value="<?php echo esc_attr( $display_alt ); ?>" />
 					<?php endif; ?>
@@ -553,7 +576,15 @@ class WPAI_Alt_Text_Admin {
 			?>
 			<tr>
 				<td>
-					<?php echo $thumb ? wp_kses_post( $thumb ) : esc_html__( 'N/A', 'dynamic-alt-tags' ); ?>
+					<?php if ( $thumb ) : ?>
+						<?php if ( ! empty( $image_url ) ) : ?>
+							<a href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo wp_kses_post( $thumb ); ?></a>
+						<?php else : ?>
+							<?php echo wp_kses_post( $thumb ); ?>
+						<?php endif; ?>
+					<?php else : ?>
+						<?php esc_html_e( 'N/A', 'dynamic-alt-tags' ); ?>
+					<?php endif; ?>
 					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 				</td>
 				<td><?php esc_html_e( 'None', 'dynamic-alt-tags' ); ?></td>

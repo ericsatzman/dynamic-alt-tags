@@ -180,6 +180,12 @@ $is_no_alt    = 'no_alt' === $view;
 					<th><?php esc_html_e( 'Alt Text', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Queue Status', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
+				<?php elseif ( $is_history ) : ?>
+					<th><?php esc_html_e( 'Status', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Confidence', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Alt Text', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Processed On', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
 				<?php else : ?>
 					<th><?php esc_html_e( 'Status', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Confidence', 'dynamic-alt-tags' ); ?></th>
