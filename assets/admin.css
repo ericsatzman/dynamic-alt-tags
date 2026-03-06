@@ -113,6 +113,17 @@
 
 /* Mobile/tablet responsive overrides. Desktop (>782px) remains unchanged. */
 @media screen and (max-width: 782px) {
+	.ai-alt-wrap .nav-tab-wrapper {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.ai-alt-wrap .nav-tab-wrapper .nav-tab {
+		float: none;
+		margin: 0;
+	}
+
 	.ai-alt-wrap .ai-alt-queue-process-top {
 		float: none;
 		position: static;
@@ -129,21 +140,57 @@
 	.ai-alt-wrap .ai-alt-table {
 		display: block;
 		width: 100%;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
+	}
+
+	.ai-alt-wrap .ai-alt-table thead {
+		display: none;
+	}
+
+	.ai-alt-wrap .ai-alt-table tbody,
+	.ai-alt-wrap .ai-alt-table tr {
+		display: block;
+		width: 100%;
+	}
+
+	.ai-alt-wrap .ai-alt-table tr {
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-radius: 6px;
+		padding: 10px;
+		margin-bottom: 10px;
 	}
 
 	.ai-alt-wrap .ai-alt-table th,
 	.ai-alt-wrap .ai-alt-table td {
-		white-space: nowrap;
+		display: block;
+		width: 100%;
+		padding: 6px 0;
+		white-space: normal;
+		word-break: break-word;
+	}
+
+	.ai-alt-wrap .ai-alt-table th.check-column,
+	.ai-alt-wrap .ai-alt-table td.check-column {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	.ai-alt-wrap .ai-alt-table code {
+		display: inline-block;
+		max-width: 100%;
 	}
 
 	.ai-alt-wrap .ai-alt-table td .button {
-		margin: 0 6px 6px 0;
+		margin: 0 8px 8px 0;
+	}
+
+	.ai-alt-wrap .ai-alt-table td .button:last-child {
+		margin-right: 0;
 	}
 
 	.ai-alt-wrap .ai-alt-table input[type="text"] {
-		min-width: 220px;
+		min-width: 0;
+		width: 100%;
 		max-width: none;
 	}
 
@@ -155,13 +202,20 @@
 	}
 
 	.ai-alt-wrap .ai-alt-queue-form .tablenav .actions select {
-		min-width: 150px;
+		min-width: 0;
+		width: 100%;
+		max-width: 260px;
 	}
 
 	.ai-alt-wrap .ai-alt-row-process-message,
 	.ai-alt-wrap .ai-alt-no-alt-message,
 	.ai-alt-wrap .ai-alt-connection-status p {
 		white-space: normal;
+	}
+
+	.ai-alt-wrap .ai-alt-progress-wrap,
+	.ai-alt-wrap .ai-alt-row-progress-wrap {
+		max-width: 100%;
 	}
 
 	/* Settings tools are currently inline-block; stack them on smaller screens. */
