@@ -171,7 +171,19 @@ class WPAI_Alt_Text_Plugin {
 	 * @return void
 	 */
 	public function ensure_cron_scheduled() {
-		if ( ! wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK ) ) {
+		$event = wp_get_scheduled_event( WPAI_ALT_TEXT_CRON_HOOK );
+		if ( false === $event ) {
+			wp_schedule_event( time() + MINUTE_IN_SECONDS, 'five_minutes', WPAI_ALT_TEXT_CRON_HOOK );
+			return;
+		}
+
+		$schedule = isset( $event->schedule ) ? (string) $event->schedule : '';
+		if ( 'five_minutes' !== $schedule ) {
+			$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
+			while ( $timestamp ) {
+				wp_unschedule_event( $timestamp, WPAI_ALT_TEXT_CRON_HOOK );
+				$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
+			}
 			wp_schedule_event( time() + MINUTE_IN_SECONDS, 'five_minutes', WPAI_ALT_TEXT_CRON_HOOK );
 		}
 	}
@@ -258,7 +270,7 @@ class WPAI_Alt_Text_Plugin {
 
 		$review_html  = '<div class="ai-alt-upload-retrieve-wrap">';
 		$review_html .= '<p class="ai-alt-upload-retrieve-row">';
-		$review_html .= '<button type="button" class="button button-primary ai-alt-upload-retrieve" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '">' . esc_html__( 'Retrieve Alt Text', 'dynamic-alt-tags' ) . '</button>';
+		$review_html .= '<button type="button" class="button button-primary ai-alt-upload-retrieve" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '">' . esc_html__( 'Generate Alt Text', 'dynamic-alt-tags' ) . '</button>';
 		$review_html .= '</p>';
 		$review_html .= '<p class="description ai-alt-upload-action-result" aria-live="polite"></p>';
 		$review_html .= '</div>';
@@ -379,6 +391,25 @@ class WPAI_Alt_Text_Plugin {
 		$attachment_id    = isset( $_POST['attachment_id'] ) ? absint( wp_unslash( $_POST['attachment_id'] ) ) : 0;
 		$action           = isset( $_POST['review_action'] ) ? sanitize_key( wp_unslash( $_POST['review_action'] ) ) : '';
 		$custom_alt       = isset( $_POST['custom_alt'] ) ? sanitize_text_field( wp_unslash( $_POST['custom_alt'] ) ) : '';
+
+		if ( ! $attachment_id ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Invalid attachment.', 'dynamic-alt-tags' ),
+				),
+				400
+			);
+		}
+
+		if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' ),
+				),
+				403
+			);
+		}
+
 		$before_row       = $this->queue_repo->get_row_by_attachment( $attachment_id );
 		$debug['request'] = array(
 			'attachment_id' => $attachment_id,
@@ -453,6 +484,13 @@ class WPAI_Alt_Text_Plugin {
 			);
 		}
 
+		if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+			return array(
+				'ok'      => false,
+				'message' => __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' ),
+			);
+		}
+
 		if ( 'generate' === $action ) {
 			$row_before = $this->queue_repo->get_row_by_attachment( $attachment_id );
 			$status     = is_array( $row_before ) && isset( $row_before['status'] ) ? sanitize_key( (string) $row_before['status'] ) : '';
@@ -470,7 +508,21 @@ class WPAI_Alt_Text_Plugin {
 				$status = 'queued';
 			}
 
-			if ( in_array( $status, array( 'approved', 'rejected', 'skipped' ), true ) ) {
+			if ( 'skipped' === $status ) {
+				$requeued = $this->queue_repo->enqueue_or_requeue( $attachment_id, 0 );
+				if ( ! $requeued ) {
+					return array(
+						'ok'      => false,
+						'message' => __( 'Unable to requeue this skipped image for generation.', 'dynamic-alt-tags' ),
+					);
+				}
+				$row_before = $this->queue_repo->get_row_by_attachment( $attachment_id );
+				$status     = is_array( $row_before ) && isset( $row_before['status'] ) ? sanitize_key( (string) $row_before['status'] ) : 'queued';
+				$suggested  = is_array( $row_before ) && isset( $row_before['suggested_alt'] ) ? sanitize_text_field( (string) $row_before['suggested_alt'] ) : '';
+				$row_id     = is_array( $row_before ) && isset( $row_before['id'] ) ? absint( $row_before['id'] ) : 0;
+			}
+
+			if ( in_array( $status, array( 'approved', 'rejected' ), true ) ) {
 				return array(
 					'ok'      => false,
 					'message' => __( 'This image is finalized in History. Requeue it from the Queue page to generate new alt text.', 'dynamic-alt-tags' ),

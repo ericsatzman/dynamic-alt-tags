@@ -458,6 +458,9 @@ class WPAI_Alt_Text_Admin {
 		if ( ! ( $attachment instanceof WP_Post ) || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $attachment_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Only image attachments can be queued.', 'dynamic-alt-tags' ) ), 400 );
 		}
+		if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' ) ), 403 );
+		}
 
 		$ok = $this->queue_repo->enqueue_or_requeue( $attachment_id, 0 );
 		if ( ! $ok ) {
@@ -538,7 +541,7 @@ class WPAI_Alt_Text_Admin {
 							<button class="button button-primary" type="submit" name="single_action" value="<?php echo esc_attr( 'approve|' . $row_id ); ?>"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></button>
 							<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'skip|' . $row_id ); ?>"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></button>
 							<?php if ( in_array( $status, array( 'queued', 'failed', 'generated' ), true ) ) : ?>
-								<button class="button ai-alt-row-process" type="button" data-row-id="<?php echo esc_attr( (string) $row_id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'ai_alt_queue_process_ajax' ) ); ?>"><?php esc_html_e( 'Retrieve Alt Text', 'dynamic-alt-tags' ); ?></button>
+								<button class="button ai-alt-row-process" type="button" data-row-id="<?php echo esc_attr( (string) $row_id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'ai_alt_queue_process_ajax' ) ); ?>"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></button>
 							<?php endif; ?>
 						<?php endif; ?>
 					<?php if ( ! empty( $image_url ) ) : ?>
@@ -872,8 +875,8 @@ class WPAI_Alt_Text_Admin {
 			$bulk_final_alt_raw = isset( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$alts               = is_array( $bulk_final_alt_raw ) ? $bulk_final_alt_raw : array();
 			$alt  = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
-			$this->apply_queue_action( $row_id, $action, $alt );
-			$updated_count = 1;
+			$applied = $this->apply_queue_action( $row_id, $action, $alt );
+			$updated_count = $applied ? 1 : 0;
 
 			$notice = 'queue_updated';
 			if ( 'process' === $action ) {
@@ -922,8 +925,9 @@ class WPAI_Alt_Text_Admin {
 			$alts               = is_array( $bulk_final_alt_raw ) ? $bulk_final_alt_raw : array();
 			foreach ( $selected_ids as $row_id ) {
 				$alt = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
-				$this->apply_queue_action( $row_id, $bulk_action, $alt );
-				++$updated_count;
+				if ( $this->apply_queue_action( $row_id, $bulk_action, $alt ) ) {
+					++$updated_count;
+				}
 			}
 		}
 
@@ -946,38 +950,43 @@ class WPAI_Alt_Text_Admin {
 	 * @param int    $row_id Queue row ID.
 	 * @param string $action Action key.
 	 * @param string $alt Alt text.
-	 * @return void
+	 * @return bool
 	 */
 	private function apply_queue_action( $row_id, $action, $alt ) {
 		$row_id = absint( $row_id );
 		if ( ! $row_id ) {
-			return;
+			return false;
+		}
+
+		$row = $this->queue_repo->get_row( $row_id );
+		if ( ! is_array( $row ) || empty( $row['attachment_id'] ) ) {
+			return false;
+		}
+
+		$attachment_id = absint( $row['attachment_id'] );
+		if ( ! $attachment_id || ! current_user_can( 'edit_post', $attachment_id ) ) {
+			return false;
 		}
 
 		if ( 'approve' === $action ) {
 			if ( '' === trim( (string) $alt ) ) {
-				$row = $this->queue_repo->get_row( $row_id );
 				$alt = is_array( $row ) && isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
 			}
-			$this->processor->approve_row( $row_id, $alt );
+			return $this->processor->approve_row( $row_id, $alt );
 		} elseif ( 'reject' === $action ) {
-			$row = $this->queue_repo->get_row( $row_id );
-			if ( is_array( $row ) && ! empty( $row['attachment_id'] ) ) {
-				update_post_meta( absint( $row['attachment_id'] ), '_wp_attachment_image_alt', '' );
-				update_post_meta( absint( $row['attachment_id'] ), '_ai_alt_review_required', 0 );
-			}
-			$this->queue_repo->mark_final( $row_id, 'rejected', '' );
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', '' );
+			update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
+			return $this->queue_repo->mark_final( $row_id, 'rejected', '' );
 		} elseif ( 'skip' === $action ) {
-			$row = $this->queue_repo->get_row( $row_id );
-			if ( is_array( $row ) && ! empty( $row['attachment_id'] ) ) {
-				update_post_meta( absint( $row['attachment_id'] ), '_wp_attachment_image_alt', '' );
-				update_post_meta( absint( $row['attachment_id'] ), '_ai_alt_review_required', 0 );
-			}
-			$this->queue_repo->mark_final( $row_id, 'skipped', '' );
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', '' );
+			update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
+			return $this->queue_repo->mark_final( $row_id, 'skipped', '' );
 		} elseif ( 'process' === $action ) {
 			$message = '';
-			$this->process_queue_row( $row_id, $message );
+			return $this->process_queue_row( $row_id, $message );
 		}
+
+		return false;
 	}
 
 	/**
@@ -1001,6 +1010,10 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		$attachment_id = absint( $row['attachment_id'] );
+		if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+			$message = __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' );
+			return false;
+		}
 		$processed     = $this->processor->process_attachment_for_review( $attachment_id );
 		if ( ! $processed ) {
 			$latest_row = $this->queue_repo->get_row( $row_id );

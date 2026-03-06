@@ -120,6 +120,7 @@ class WPAI_Alt_Text_Settings {
 			'ai_alt_text_access_section',
 			array( 'id' => 'allowed_roles' )
 		);
+
 	}
 
 	/**
@@ -158,9 +159,7 @@ class WPAI_Alt_Text_Settings {
 
 		if ( isset( $input['cloudflare_token'] ) ) {
 			$token = trim( (string) $input['cloudflare_token'] );
-			if ( '' !== $token ) {
-				$current['cloudflare_token'] = sanitize_text_field( $token );
-			}
+			$current['cloudflare_token'] = '' === $token ? '' : sanitize_text_field( $token );
 		}
 
 		$current['batch_size'] = isset( $input['batch_size'] ) ? max( 1, min( 50, absint( $input['batch_size'] ) ) ) : 10;

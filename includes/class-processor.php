@@ -85,6 +85,11 @@ class WPAI_Alt_Text_Processor {
 				continue;
 			}
 
+			if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
+				$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
+				continue;
+			}
+
 			$existing_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 			if ( ! $overwrite && is_string( $existing_alt ) && '' !== trim( $existing_alt ) ) {
 				$this->queue_repo->mark_final( $row_id, 'skipped', '' );
@@ -161,6 +166,11 @@ class WPAI_Alt_Text_Processor {
 			return false;
 		}
 
+		if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
+			$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
+			return false;
+		}
+
 		$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
 		if ( ! in_array( $status, array( 'queued', 'failed' ), true ) ) {
 			return false;
@@ -217,6 +227,10 @@ class WPAI_Alt_Text_Processor {
 			return false;
 		}
 
+		if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
+			return false;
+		}
+
 		$alt_text = $this->generator->to_alt_text( $alt_text );
 		if ( '' === $alt_text ) {
 			return false;
@@ -237,5 +251,26 @@ class WPAI_Alt_Text_Processor {
 		update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
 
 		return $this->queue_repo->mark_final( $row_id, 'approved', $alt_text );
+	}
+
+	/**
+	 * Check whether current request context can edit an attachment.
+	 *
+	 * Cron/background runs have no current user and are allowed.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function current_user_can_edit_attachment( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		if ( get_current_user_id() <= 0 ) {
+			return true;
+		}
+
+		return current_user_can( 'edit_post', $attachment_id );
 	}
 }

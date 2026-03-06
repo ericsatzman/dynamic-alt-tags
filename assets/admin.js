@@ -75,33 +75,8 @@
 	}
 
 	function clearPluginPageNotices() {
-		var url = new URL(window.location.href);
-		var page = String(url.searchParams.get('page') || '');
-		var isPluginPage = page === 'ai-alt-text-settings' || page === 'ai-alt-text-queue';
-		if (!isPluginPage) {
-			return;
-		}
-
-		// Keep settings-page notices visible so users can confirm saves.
-		if (page === 'ai-alt-text-settings') {
-			return;
-		}
-
-		var noticeSelectors = [
-			'.notice',
-			'.update-nag',
-			'div.updated',
-			'div.error'
-		];
-
-		noticeSelectors.forEach(function (selector) {
-			var nodes = document.querySelectorAll(selector);
-			nodes.forEach(function (node) {
-				if (node instanceof HTMLElement) {
-					node.remove();
-				}
-			});
-		});
+		// Intentionally no-op: preserve core/plugin notices in admin screens.
+		return;
 	}
 
 	function placeRetrieveButtons() {
