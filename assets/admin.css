@@ -110,3 +110,63 @@
 	justify-content: center;
 	margin-top: 14px;
 }
+
+/* Mobile/tablet responsive overrides. Desktop (>782px) remains unchanged. */
+@media screen and (max-width: 782px) {
+	.ai-alt-wrap .ai-alt-queue-process-top {
+		float: none;
+		position: static;
+		right: auto;
+		margin: 10px 0 14px;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+	}
+
+	.ai-alt-wrap .ai-alt-queue-process-top form {
+		margin: 0 8px 8px 0;
+	}
+
+	.ai-alt-wrap .ai-alt-table {
+		display: block;
+		width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.ai-alt-wrap .ai-alt-table th,
+	.ai-alt-wrap .ai-alt-table td {
+		white-space: nowrap;
+	}
+
+	.ai-alt-wrap .ai-alt-table td .button {
+		margin: 0 6px 6px 0;
+	}
+
+	.ai-alt-wrap .ai-alt-table input[type="text"] {
+		min-width: 220px;
+		max-width: none;
+	}
+
+	.ai-alt-wrap .ai-alt-queue-form .tablenav .actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.ai-alt-wrap .ai-alt-queue-form .tablenav .actions select {
+		min-width: 150px;
+	}
+
+	.ai-alt-wrap .ai-alt-row-process-message,
+	.ai-alt-wrap .ai-alt-no-alt-message,
+	.ai-alt-wrap .ai-alt-connection-status p {
+		white-space: normal;
+	}
+
+	/* Settings tools are currently inline-block; stack them on smaller screens. */
+	.ai-alt-wrap form[style*="display:inline-block"] {
+		display: block !important;
+		margin: 0 0 8px !important;
+	}
+}
