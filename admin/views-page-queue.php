@@ -33,7 +33,7 @@ $is_no_alt    = 'no_alt' === $view;
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="ai_alt_process_now_queue" />
 					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
-					<button type="submit" class="button button-primary"><?php esc_html_e( 'Retrieve Alt Text', 'dynamic-alt-tags' ); ?></button>
+					<button type="submit" class="button button-primary"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></button>
 				</form>
 			</div>
 	<?php endif; ?>
