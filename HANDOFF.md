@@ -1,328 +1,220 @@
-# Dynamic Alt Tags - Project Handoff
+# Dynamic Alt Tags - Project Handoff (Current)
 
-## 1) Project Overview
-Dynamic Alt Tags is a WordPress plugin that queues image attachments, requests AI alt text from a Cloudflare Worker, and supports admin review/apply/reject/skip/process workflows from both queue pages and the Media attachment modal.
+## 1) Project Snapshot
+Dynamic Alt Tags is a WordPress plugin that generates image alt text through a Cloudflare Worker, manages a queue/history workflow, and supports per-image retrieval from Attachment Details.
 
-Local plugin path:
+Plugin path:
 - `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags`
 
-GitHub repository:
+Repository:
 - `https://github.com/ericsatzman/dynamic-alt-tags.git`
 - Branch: `main`
-- Git root is the plugin folder itself (tracked paths start at `admin/`, `assets/`, `includes/`, etc.).
+- Plugin directory is the git root.
 
-Current latest commit at handoff:
-- `4d7fdea` - Enhance queue UI with no-alt tab and dynamic loading
+Current git state:
+- Clean working tree.
+- `main` synced with `origin/main`.
 
-Recent commit history (newest first):
-1. `4d7fdea` - Enhance queue UI with no-alt tab and dynamic loading
-2. `fe96080` - Add per-image queue processing progress UI
-3. `41104a8` - Improve queue controls and provider diagnostics
-4. `d0dce7f` - Improve settings diagnostics and queue processing feedback
-5. `5c053e3` - Update handoff and readme for plugin-root repo
+Latest commit:
+- `666ef16` - Refine plugin access controls and settings UI
 
-## 2) Current Functional Scope
+Recent commits (newest first):
+1. `666ef16` Refine plugin access controls and settings UI
+2. `3e99eea` Add role-based queue access and admin-only settings access
+3. `5877e34` Improve iPhone queue responsiveness with stacked mobile rows
+4. `e58b1a0` Add mobile/tablet responsive CSS without desktop changes
+5. `1a64c53` Refine attachment retrieve behavior for finalized and active states
+6. `dbeb6d0` Restore attachment retrieve button to bottom placement
+7. `1fa16f9` Update history columns and make thumbnails clickable
+8. `c1fe55e` Reorder row actions to place Skip before retrieve
+9. `cac5ac2` Add composer license to satisfy strict validation
+10. `3b75cb9` Add title sync option handling in processor
+11. `171a1f5` Add auto-apply alt text option for new uploads
 
-### Core architecture
-- Bootstrap: `dynamic-alt-tags.php`
-- Hook registration/container: `includes/class-plugin.php`
-- Activation/deactivation + queue table: `includes/class-activator.php`
-- Settings model + rendering: `includes/class-settings.php`
-- Queue repository/data layer: `includes/class-queue-repo.php`
-- Processor orchestration: `includes/class-processor.php`
-- Provider abstraction + Cloudflare provider: `includes/class-provider-interface.php`, `includes/class-provider-cloudflare.php`
-- Admin page handlers + AJAX endpoints: `includes/class-admin.php`
+## 2) Current Menus and Navigation
+### Settings menu (left admin)
+- Menu label: `Dynamic Alt Tags`
+- Page slug: `ai-alt-text-settings`
+- Page title (H1): `Dynamic Alt Tags Settings`
 
-### Queue statuses
-- `queued`, `processing`, `generated`, `approved`, `rejected`, `failed`, `skipped`
+### Media menu (left admin)
+- Menu label: `Dynamic Alt Tags`
+- Page slug: `ai-alt-text-queue`
+- Queue page title (H1): `Dynamic Alt Tags`
 
-### Main queue UX (Media -> Dynamic Alt Tags Queue)
-Tabs:
-1. **Active Queue**
-- Rows in statuses: `queued`, `processing`, `generated`, `failed`
-- Bulk actions: Approve / Reject / Skip Image
-- Row actions: Approve / Reject / Skip Image / View Image / Process (status-based)
+## 3) Access Model (Important)
+Access is now split by page type:
 
-2. **History**
-- Rows in statuses: `approved`, `rejected`, `skipped`
-- Read-only history view
+### Settings page access
+- Administrator only.
+- Non-admin roles cannot view Settings page even if checked in role list.
 
-3. **No Alt Images** (new)
-- Lists image attachments with empty `_wp_attachment_image_alt`
-- Row action: `Add to Queue`
-- Shows queue status if already queued previously (via join to queue table)
+### Queue page access (Media > Dynamic Alt Tags)
+- Administrator always has access.
+- Additional roles can be granted queue access via Settings role checkboxes.
 
-### Queue page top-right actions (Active tab)
-- `Run Backfill`
-- `Process Queue Now`
+### Where this is enforced
+- Menu visibility and admin-post/wp-ajax handlers: `includes/class-admin.php`
+- Attachment Details retrieve controls and upload-action AJAX: `includes/class-plugin.php`
+- Central access methods:
+  - `WPAI_Alt_Text_Settings::current_user_can_access_settings()`
+  - `WPAI_Alt_Text_Settings::current_user_can_access_queue()`
+  - `WPAI_Alt_Text_Settings::current_user_is_administrator()`
 
-Both buttons are available from the Queue page (not just Settings) and redirect back with queue-page notices.
+## 4) Settings Page - Current Behavior
+Settings are rendered by `includes/class-settings.php` and `admin/views-page-settings.php`.
 
-### Pagination and dynamic loading
-- Server loads **20 items initially** per tab.
-- New `Add more` button at bottom of table for all tabs.
-- AJAX appends +20 each click until all available rows are shown.
+### Current fields
+- Cloudflare Worker URL
+- Cloudflare API Token
+- Batch Size
+- Min Confidence
+- Use URL Mode - Send Image URL
+- Auto-Apply Alt Text for New Uploads
+- Sync Alt Text to Attachment Title
+- Overwrite Existing Alt Text
+- Require Manual Review
+- Keep Data On Delete
+- Roles Allowed To Access Dynamic Alt Tags
 
-### Per-image process progress (Queue page)
-- Row `Process` uses AJAX (`ai_alt_queue_process_ajax`).
-- Inline progress bar shown below row action buttons.
-- Row status/confidence/suggested alt updates on success.
-- Progress bar and message are cleared together shortly after completion.
+### Removed field
+- `Cloudflare Account ID` removed from settings UI.
 
-## 3) Settings Page Behavior
+### Access Control section
+- Separate section at bottom: `Access Control`
+- Role checkboxes are sorted alphabetically by display name.
+- Description clarifies:
+  - Administrator always full access
+  - Selected roles get queue page access under Media
 
-### Connection status panel
-- Panel appears below Tools only on provider test flow (`notice=provider_test`).
-- Panel is dismissible.
-- Includes:
-  - Connected / Connection Error
-  - Last checked timestamp
-  - Latest queue failure summary
+### Save notice behavior
+- Settings save alert shows once at top as expected.
+- Duplicate custom “Settings saved” block was removed.
+- JS no longer strips settings-page notices.
 
-### Provider test behavior
-`Test Provider Connection` now runs two checks:
-1. Baseline public image test
-2. Latest queued image test (attachment URL from latest active queue row)
+## 5) Queue Page - Current Behavior
+Queue page template: `admin/views-page-queue.php`
 
-This catches local/firewall URL reachability issues that baseline alone would miss.
+### Views/Tabs
+- Active Queue
+- History
+- No Alt Images
 
-### Process Queue Now (Settings)
-- Uses iterative AJAX chunking.
-- Handles partial completion better (reduced hard-fail UX when some rows already processed).
-- Distinct notices:
-  - `process_done`
-  - `process_partial`
-  - `process_error`
+### Active Queue columns
+- Image
+- Status
+- Confidence
+- Existing Alt
+- Suggested Alt
+- Actions
 
-### Save settings confirmation
-- Top notice appears: `Settings saved.`
+### History columns
+- Image
+- Status
+- Confidence
+- Alt Text
+- Processed On (uses WP General Settings date/time format)
+- Actions
 
-## 4) Provider and Request Behavior (Cloudflare)
+### No Alt Images columns
+- Image
+- Alt Text
+- Queue Status
+- Actions
 
-### Worker endpoint currently in use
-- `https://alt-text-generator.webprod.workers.dev/`
+### Row buttons and labels
+- Active row buttons include: `Approve`, `Skip Image`, `Retrieve Alt Text`, `View Image`
+- Row `Reject` button removed.
+- Top page process button text is `Retrieve Alt Text`.
 
-### Auth
-- Plugin sends optional `Authorization: Bearer <token>`
-- Worker expects secret `WORKER_AUTH_TOKEN` (if auth enabled in Worker code)
+### Thumbnail behavior
+- Thumbnails are clickable and open the image URL in a new tab (same behavior as `View Image`).
 
-### Request modes
-1. URL mode
-- Sends `image_url`
-- Worker fetches URL itself
+### Responsiveness
+- Mobile/tablet (`max-width: 782px`) has responsive overrides in `assets/admin.css`.
+- Queue rows become stacked cards on mobile to improve iPhone usability.
+- Desktop styles remain unchanged by using only mobile/tablet media queries.
 
-2. Direct upload mode (new plugin capability)
-- Settings toggle: `Direct Upload Mode (Send Image Bytes)`
-- Plugin attempts to include:
-  - `image_source: bytes`
-  - `image_data_base64`
-  - `image_mime_type`
-  - `image_filename`
-- URL is still included for fallback compatibility.
+## 6) Attachment Details (Media Modal) - Current Behavior
+Implemented in `includes/class-plugin.php` and `assets/admin.js`.
 
-### Direct mode constraints
-- Max inline bytes: 10MB (`MAX_INLINE_IMAGE_BYTES`)
-- If direct payload cannot be built (missing/unreadable file/size), provider falls back to URL path.
+### UI
+- Old “Dynamic Alt Tags Review” block with dropdown/custom/reject/skip was removed.
+- A single `Retrieve Alt Text` button is shown in the plugin field area (bottom placement).
 
-### Timeout
-- Provider request timeout raised to **90 seconds**.
+### Retrieval flow
+- Button calls upload action AJAX with `review_action=generate`.
+- Logic in `apply_review_action()`:
+  - If no row exists: enqueue + process
+  - If status is `generated`: directly apply suggested alt
+  - If status is `processing`: returns “try again” message
+  - If status is finalized (`approved/rejected/skipped`): does not overwrite history; instructs user to requeue from Queue page
 
-### Improved provider error details
-- Non-2xx errors now include richer context when available:
-  - Worker message/error body snippet
-  - upstream fetch status
-  - image URL
-  - request mode (`bytes` / `url`)
-- WP transport errors (e.g., cURL 28) now include request mode as well.
+### Alt/title sync behavior
+- Wherever alt text is applied, title sync is conditional by setting:
+  - `sync_title_from_alt` (default on)
 
-## 5) Worker Setup Notes (important for new context)
+## 7) Upload/New Image Behavior
+### New uploads
+- Option: `auto_apply_new_uploads` (default off)
+- If enabled, newly uploaded image suggestion is auto-approved/applied after generation.
 
-### ES module requirement
-- Worker must use `export default { async fetch(...) { ... } }` syntax.
-- AI binding (`AI`) requires ES module Worker format.
+## 8) Provider/Runtime Notes
+- Cloudflare Worker URL in use historically: `https://alt-text-generator.webprod.workers.dev/`
+- URL mode may fail for local/private URLs (e.g., `sandbox.local`)
+- Direct upload mode is default/recommended; URL mode is optional
+- Provider timeout increased to 90 seconds
+- Error messaging improved to include more context where available
 
-### AI model license acceptance (one-time per account/model)
-- For `@cf/meta/llama-3.2-11b-vision-instruct`, one-time prompt `agree` was required.
-- Log signal seen: `5016: Thank you for agreeing...`
+## 9) CI / Quality Tooling
+### GitHub Actions
+- Workflow: PHPCS + Composer audit
+- Important prior fix: composer validate strict required `license` in `composer.json`
 
-### Common Worker/runtime failure patterns observed
-1. `401 Unauthorized`
-- Token mismatch between plugin and Worker secret
+### Local checks
+- PHPCS command:
+  - `composer -d /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
-2. `400 Image fetch returned non-OK`
-- URL mode fetch blocked/unreachable; often local/private URL (`sandbox.local`)
-
-3. `530`/`403` upstream
-- Remote host access/WAF/hotlink restrictions for Worker IP/profile
-
-4. `cURL error 28` from plugin
-- Timeout to worker or long-running request
-
-### Recommended Worker response fields
-For easier plugin diagnostics, Worker should include (on errors where possible):
-- `error`/`message`
-- `upstream_status`
-- `image_url` or `fetch_url`
-
-## 6) Queue and Admin UX Changes Since Early Handoff
-
-### New/changed queue controls
-- Row-level `Process` button in Active queue for `queued`, `failed`, `generated`.
-- Queue page top-right `Run Backfill` and `Process Queue Now`.
-- No Alt Images tab with `Add to Queue`.
-
-### AJAX endpoints added
-- `wp_ajax_ai_alt_queue_process_ajax`
-- `wp_ajax_ai_alt_queue_load_more_ajax`
-- `wp_ajax_ai_alt_queue_add_no_alt_ajax`
-
-### Queue repository methods added
-- `enqueue_or_requeue()`
-- `get_no_alt_paginated()`
-- `get_latest_failed_row()`
-- `get_latest_active_row()`
-- `get_active_status_counts()`
-
-## 7) Alt Text Generation Rules/Normalization
-
-`includes/class-alt-generator.php` now includes:
-- Strip HTML + normalize whitespace
-- Remove leading “image/photo/picture of” patterns
-- Max length 140 chars with word-boundary trimming
-- If truncation happens, trims to last complete sentence ending (`.`, `!`, `?`) when possible
-- Basic usability checks remain (minimum length and no filename-like alt)
-
-## 8) Known Caveats / Open Risks
-
-1. **Local dev + URL mode**
-- Local URLs like `http://sandbox.local/...` are not fetchable by cloud Worker.
-- Use Direct Upload Mode for local/private environments.
-
-2. **No-alt tab render path uses server-rendered HTML helpers**
-- Rendering is centralized in admin class helper methods and injected in template/AJAX.
-- Functional, but worth future refactor if template concerns should stay in view file.
-
-3. **Large images + direct mode**
-- May still be slow even with 90s timeout.
-- Can require smaller batch size or per-image processing.
-
-4. **Partial processing UX**
-- Improved, but still dependent on server stability/timeouts.
-
-## 9) Resume Checklist (for next Codex session)
-
-1. Confirm git state:
-- `git -C /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags log --oneline -n 10`
-
-2. Validate PHP syntax:
-- `find /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags -name '*.php' -print0 | xargs -0 -n1 php -l`
-
-3. Validate JS syntax:
-- `node --check /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/assets/admin.js`
-
-4. In WP Admin test paths:
-- Settings page:
-  - Save settings notice
-  - Test Provider Connection (baseline + latest queued image checks)
-  - Process Queue Now behavior (`done` / `partial` / `error` notices)
-- Queue page:
-  - Active / History / No Alt Images tabs
-  - Add more AJAX for each tab
-  - Row Process progress behavior
-  - No Alt `Add to Queue` action
-  - Top-right Run Backfill + Process Queue Now actions
-- Attachment modal:
-  - Review panel action flow still intact
-
-5. If provider failures occur:
-- Check Worker logs and compare plugin error details for `request mode`, `upstream status`, and `image URL`.
-
-## 10) Important Files to Open First in New Context
-- `HANDOFF.md`
+## 10) Key Files (Start Here)
+- `dynamic-alt-tags.php`
+- `includes/class-plugin.php`
 - `includes/class-admin.php`
-- `includes/class-queue-repo.php`
-- `includes/class-provider-cloudflare.php`
 - `includes/class-settings.php`
-- `admin/views-page-queue.php`
+- `includes/class-processor.php`
+- `includes/class-queue-repo.php`
 - `admin/views-page-settings.php`
+- `admin/views-page-queue.php`
 - `assets/admin.js`
 - `assets/admin.css`
-- `includes/class-plugin.php`
+- `readme.txt`
 
-## 11) Plugin File Inventory
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/HANDOFF.md`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/dynamic-alt-tags.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/readme.txt`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/uninstall.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/languages/dynamic-alt-tags.pot`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/assets/admin.css`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/assets/admin.js`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/admin/views-page-settings.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/admin/views-page-queue.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-activator.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-admin.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-alt-generator.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-logger.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-plugin.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-processor.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-provider-cloudflare.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-provider-interface.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-queue-repo.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-rest.php`
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags/includes/class-settings.php`
+## 11) Known Constraints / Open Risks
+1. Queue mobile UX is improved but still table-derived HTML; consider future semantic card markup server-side if needed.
+2. Attachment Details button placement was intentionally reverted to bottom after multiple layout experiments.
+3. Requeue for finalized images is intentionally restricted from Attachment Details; must be done from Queue page.
+4. Access model now depends on role names (not capabilities); if custom role strategy changes, review `class-settings.php` methods.
 
-## 12) UI Responsiveness Recommendations (Settings + Queue)
+## 12) Suggested Next Steps
+1. Add automated tests (or WP integration smoke tests) for role-based access split:
+   - admin-only settings
+   - queue access for selected roles
+2. Add a small Settings help box explaining why finalized items must be requeued from Queue page.
+3. Optionally add an explicit “Requeue from Attachment Details” action if desired product-wise.
+4. Update changelog in `readme.txt` with versioned entries reflecting current features.
 
-Goal: improve perceived speed and responsiveness of admin workflows without requiring major visual redesign.
+## 13) Resume Checklist for New Codex Window
+1. Confirm status:
+- `git -C /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags status -sb`
 
-### Recommended improvements
-1. **Optimistic row updates**
-- For queue row actions (`Process`, `Add to Queue`, approve/reject/skip), update visible row state immediately and roll back only if AJAX fails.
+2. Validate coding standards:
+- `composer -d /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
-2. **Non-blocking feedback**
-- Replace blocking `window.alert()` usage with inline messages/toasts.
-- Keep action context local to the row or panel where the action happened.
+3. Validate core flows in WP admin:
+- Settings page visible only for administrators
+- Queue page visible for admin + checked roles
+- Settings save shows single success notice
+- Queue mobile view on iPhone width
+- Attachment Details Retrieve Alt Text behavior
 
-3. **Consistent loading states**
-- Disable only the clicked button while a request is in-flight.
-- Swap button text to loading state (for example: `Processing...`, `Loading...`) and restore on completion.
-
-4. **Avoid full page redirects where possible**
-- Prefer AJAX updates and notices rendered in-page over redirect-based feedback loops, especially on queue actions.
-
-5. **Live queue freshness**
-- Poll lightweight status counts (`queued`, `processing`, `failed`) and refresh badges/summary text without reload.
-
-6. **Preload next chunk**
-- After initial queue render, fetch next page payload in background so `View more images` feels instant.
-
-7. **Render-performance guardrails**
-- Keep row updates incremental and scoped.
-- Avoid repeated large HTML replacements in the table body when only one row changed.
-
-8. **Long-run progress clarity**
-- For `Process Queue Now`, continue to show progress with processed totals and clear end-state messaging.
-
-### Desktop UI impact expectations
-- Most recommendations are **behavioral only** and should not materially change desktop layout.
-- Visible desktop changes should be limited to:
-  - loading states/spinners/text on action controls,
-  - inline success/error messages or toasts,
-  - optional sticky controls if later implemented.
-- If implemented carefully, desktop width presentation should remain visually consistent while feeling faster.
-
-## 13) Attachment Details UX Notes (Latest)
-
-### Review helper text visibility
-- In Attachment Details review UI, helper text:
-  - `Choose an action to finalize this uploaded image suggestion.`
-- Is shown only when review is still active.
-- It is hidden for final statuses (`approved`, `rejected`, `skipped`) on server-rendered load.
-- It is also hidden client-side immediately after a successful apply action (so users do not need a refresh to see it disappear).
-
-### Action confirmation copy style
-- Upload-review action confirmations were updated to plain user-facing sentence style (no `Dynamic Alt Tags:` prefix).
-- Example:
-  - Old: `Dynamic Alt Tags: suggested alt text approved and applied.`
-  - New: `The suggested alt text is approved and applied.`
-- Similar wording style was applied to generate/reject/skip/custom messages in the same action handler.
+4. If access bugs appear:
+- Start with `includes/class-settings.php` access methods, then `includes/class-admin.php` + `includes/class-plugin.php` callers.
