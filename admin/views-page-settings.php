@@ -12,11 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap ai-alt-wrap">
 	<h1><?php esc_html_e( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ); ?></h1>
 	<?php settings_errors( 'ai_alt_text_options_group' ); ?>
-	<?php if ( isset( $_GET['settings-updated'] ) && 'true' === sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-		<div class="notice notice-success is-dismissible">
-			<p><?php esc_html_e( 'Settings saved.', 'dynamic-alt-tags' ); ?></p>
-		</div>
-	<?php endif; ?>
 
 	<?php if ( isset( $_GET['notice'] ) && 'backfill_done' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
 		<div class="notice notice-success is-dismissible">

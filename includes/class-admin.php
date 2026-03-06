@@ -58,23 +58,27 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function register_menus() {
-		add_submenu_page(
-			'upload.php',
-			__( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ),
-			__( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ),
-			'manage_options',
-			'ai-alt-text-settings',
-			array( $this, 'render_settings_page' )
-		);
+		if ( $this->current_user_can_view_settings() ) {
+			add_submenu_page(
+				'options-general.php',
+				__( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ),
+				__( 'Dynamic Alt Tags', 'dynamic-alt-tags' ),
+				'read',
+				'ai-alt-text-settings',
+				array( $this, 'render_settings_page' )
+			);
+		}
 
-		add_submenu_page(
-			'upload.php',
-			__( 'Dynamic Alt Tags Queue', 'dynamic-alt-tags' ),
-			__( 'Dynamic Alt Tags Queue', 'dynamic-alt-tags' ),
-			'manage_options',
-			'ai-alt-text-queue',
-			array( $this, 'render_queue_page' )
-		);
+		if ( $this->current_user_can_view_queue() ) {
+			add_submenu_page(
+				'upload.php',
+				__( 'Dynamic Alt Tags', 'dynamic-alt-tags' ),
+				__( 'Dynamic Alt Tags', 'dynamic-alt-tags' ),
+				'read',
+				'ai-alt-text-queue',
+				array( $this, 'render_queue_page' )
+			);
+		}
 	}
 
 	/**
@@ -142,7 +146,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function render_settings_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'dynamic-alt-tags' ) );
 		}
 
@@ -157,7 +161,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function render_queue_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'dynamic-alt-tags' ) );
 		}
 
@@ -178,7 +182,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_run_backfill() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -205,7 +209,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_run_backfill_queue() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -232,7 +236,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_process_now() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -274,7 +278,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_process_now_queue() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -316,7 +320,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_process_now_ajax() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
@@ -355,7 +359,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_queue_process_ajax() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
@@ -405,7 +409,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_queue_load_more_ajax() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) ), 403 );
 		}
 
@@ -439,7 +443,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_queue_add_no_alt_ajax() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) ), 403 );
 		}
 
@@ -657,7 +661,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_test_connection() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -843,7 +847,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_queue_action() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->current_user_can_view_queue() ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
 		}
 
@@ -1009,5 +1013,23 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Check whether current user can access plugin settings/queue pages.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_view_settings() {
+		return $this->settings->current_user_can_access_settings();
+	}
+
+	/**
+	 * Check queue/media access for current user.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_view_queue() {
+		return $this->settings->current_user_can_access_queue();
 	}
 }

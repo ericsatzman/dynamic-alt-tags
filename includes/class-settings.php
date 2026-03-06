@@ -34,6 +34,7 @@ class WPAI_Alt_Text_Settings {
 			'min_confidence'      => 0.70,
 			'auto_apply_new_uploads' => 0,
 			'sync_title_from_alt' => 1,
+			'allowed_roles'       => array( 'administrator' ),
 			'overwrite_existing'  => 0,
 			'require_review'      => 1,
 			'keep_data_on_delete' => 0,
@@ -80,6 +81,13 @@ class WPAI_Alt_Text_Settings {
 			'ai-alt-text-settings'
 		);
 
+		add_settings_section(
+			'ai_alt_text_access_section',
+			__( 'Access Control', 'dynamic-alt-tags' ),
+			'__return_false',
+			'ai-alt-text-settings'
+		);
+
 		$fields = array(
 			'worker_url'          => __( 'Cloudflare Worker URL', 'dynamic-alt-tags' ),
 			'cloudflare_account'  => __( 'Cloudflare Account ID', 'dynamic-alt-tags' ),
@@ -104,6 +112,15 @@ class WPAI_Alt_Text_Settings {
 				array( 'id' => $field_id )
 			);
 		}
+
+		add_settings_field(
+			'allowed_roles',
+			__( 'Roles Allowed To Access Dynamic Alt Tags', 'dynamic-alt-tags' ),
+			array( $this, 'render_field' ),
+			'ai-alt-text-settings',
+			'ai_alt_text_access_section',
+			array( 'id' => 'allowed_roles' )
+		);
 	}
 
 	/**
@@ -158,6 +175,18 @@ class WPAI_Alt_Text_Settings {
 		$current['overwrite_existing']  = ! empty( $input['overwrite_existing'] ) ? 1 : 0;
 		$current['require_review']      = ! empty( $input['require_review'] ) ? 1 : 0;
 		$current['keep_data_on_delete'] = ! empty( $input['keep_data_on_delete'] ) ? 1 : 0;
+		$current['allowed_roles']       = array( 'administrator' );
+		if ( isset( $input['allowed_roles'] ) && is_array( $input['allowed_roles'] ) ) {
+			$roles = array_filter(
+				array_map(
+					'sanitize_key',
+					array_map( 'strval', wp_unslash( $input['allowed_roles'] ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+				)
+			);
+			if ( ! empty( $roles ) ) {
+				$current['allowed_roles'] = array_values( array_unique( $roles ) );
+			}
+		}
 
 		return $current;
 	}
@@ -177,6 +206,37 @@ class WPAI_Alt_Text_Settings {
 		}
 
 		$name = self::OPTION_KEY . '[' . $id . ']';
+
+		if ( 'allowed_roles' === $id ) {
+			$selected_roles = isset( $options['allowed_roles'] ) && is_array( $options['allowed_roles'] ) ? array_map( 'strval', $options['allowed_roles'] ) : array( 'administrator' );
+			$wp_roles       = wp_roles();
+			$roles          = $wp_roles instanceof WP_Roles ? $wp_roles->roles : array();
+			$sortable_roles = array();
+			foreach ( $roles as $role_key => $role_data ) {
+				$role_label = isset( $role_data['name'] ) ? (string) $role_data['name'] : (string) $role_key;
+				$sortable_roles[] = array(
+					'key'   => (string) $role_key,
+					'label' => $role_label,
+				);
+			}
+			usort(
+				$sortable_roles,
+				static function ( $a, $b ) {
+					return strcasecmp( (string) $a['label'], (string) $b['label'] );
+				}
+			);
+			foreach ( $sortable_roles as $role_item ) {
+				printf(
+					'<label style="display:block; margin-bottom:6px;"><input type="checkbox" name="%1$s[]" value="%2$s" %3$s /> %4$s</label>',
+					esc_attr( $name ),
+					esc_attr( (string) $role_item['key'] ),
+					checked( true, in_array( (string) $role_item['key'], $selected_roles, true ), false ),
+					esc_html( (string) $role_item['label'] )
+				);
+			}
+			echo '<p class="description">' . esc_html__( 'Administrator always has full access. Selected roles can access only the Dynamic Alt Tags Queue page under Media.', 'dynamic-alt-tags' ) . '</p>';
+			return;
+		}
 
 		if ( in_array( $id, array( 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
@@ -239,5 +299,68 @@ class WPAI_Alt_Text_Settings {
 		if ( 'cloudflare_account' === $id ) {
 			echo '<p class="description">' . esc_html__( 'Optional. Currently not used by this plugin when calling your Worker URL directly.', 'dynamic-alt-tags' ) . '</p>';
 		}
+	}
+
+	/**
+	 * Check whether a user is allowed to access plugin settings/queue pages.
+	 *
+	 * @param int $user_id Optional user ID. Defaults to current user.
+	 * @return bool
+	 */
+	public function current_user_has_access( $user_id = 0 ) {
+		return $this->current_user_can_access_queue( $user_id );
+	}
+
+	/**
+	 * Check whether a user can access plugin queue/media controls.
+	 *
+	 * @param int $user_id Optional user ID. Defaults to current user.
+	 * @return bool
+	 */
+	public function current_user_can_access_queue( $user_id = 0 ) {
+		$user = $user_id > 0 ? get_user_by( 'id', absint( $user_id ) ) : wp_get_current_user();
+		if ( ! ( $user instanceof WP_User ) || empty( $user->roles ) ) {
+			return false;
+		}
+
+		if ( $this->current_user_is_administrator( $user_id ) ) {
+			return true;
+		}
+
+		$options       = $this->get_options();
+		$allowed_roles = isset( $options['allowed_roles'] ) && is_array( $options['allowed_roles'] )
+			? array_filter( array_map( 'sanitize_key', array_map( 'strval', $options['allowed_roles'] ) ) )
+			: array();
+
+		if ( empty( $allowed_roles ) ) {
+			$allowed_roles = array( 'administrator' );
+		}
+
+		return ! empty( array_intersect( $allowed_roles, array_map( 'strval', $user->roles ) ) );
+	}
+
+	/**
+	 * Check whether a user can access plugin settings page.
+	 *
+	 * @param int $user_id Optional user ID. Defaults to current user.
+	 * @return bool
+	 */
+	public function current_user_can_access_settings( $user_id = 0 ) {
+		return $this->current_user_is_administrator( $user_id );
+	}
+
+	/**
+	 * Check whether user has administrator role.
+	 *
+	 * @param int $user_id Optional user ID. Defaults to current user.
+	 * @return bool
+	 */
+	public function current_user_is_administrator( $user_id = 0 ) {
+		$user = $user_id > 0 ? get_user_by( 'id', absint( $user_id ) ) : wp_get_current_user();
+		if ( ! ( $user instanceof WP_User ) || empty( $user->roles ) ) {
+			return false;
+		}
+
+		return in_array( 'administrator', array_map( 'strval', $user->roles ), true );
 	}
 }

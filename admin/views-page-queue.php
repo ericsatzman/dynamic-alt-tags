@@ -22,7 +22,7 @@ $is_history   = 'history' === $view;
 $is_no_alt    = 'no_alt' === $view;
 ?>
 <div class="wrap ai-alt-wrap">
-	<h1><?php esc_html_e( 'Dynamic Alt Tags Queue', 'dynamic-alt-tags' ); ?></h1>
+	<h1><?php esc_html_e( 'Dynamic Alt Tags', 'dynamic-alt-tags' ); ?></h1>
 	<?php if ( ! $is_history && ! $is_no_alt ) : ?>
 		<div class="ai-alt-queue-process-top">
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">

@@ -243,7 +243,7 @@ class WPAI_Alt_Text_Plugin {
 	 * @return array<string,mixed>
 	 */
 	public function add_attachment_review_fields( $form_fields, $post ) {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->settings->current_user_can_access_queue() ) {
 			return $form_fields;
 		}
 
@@ -280,7 +280,7 @@ class WPAI_Alt_Text_Plugin {
 	 * @return array<string,mixed>
 	 */
 	public function save_attachment_review_fields( $post, $attachment ) {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->settings->current_user_can_access_queue() ) {
 			return $post;
 		}
 
@@ -347,7 +347,7 @@ class WPAI_Alt_Text_Plugin {
 			'user_id'   => get_current_user_id(),
 		);
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->settings->current_user_can_access_queue() ) {
 			$debug['error'] = 'forbidden';
 			if ( $is_debug_enabled ) {
 				error_log( '[dynamic-alt-tags] upload_action_ajax ' . wp_json_encode( $debug ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -631,7 +631,7 @@ class WPAI_Alt_Text_Plugin {
 	 * @return void
 	 */
 	public function render_upload_review_notice() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! $this->settings->current_user_can_access_queue() ) {
 			return;
 		}
 

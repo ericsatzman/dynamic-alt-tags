@@ -82,6 +82,11 @@
 			return;
 		}
 
+		// Keep settings-page notices visible so users can confirm saves.
+		if (page === 'ai-alt-text-settings') {
+			return;
+		}
+
 		var noticeSelectors = [
 			'.notice',
 			'.update-nag',
