@@ -16,11 +16,12 @@ Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and
 Key features:
 * Queue-based processing for media library images.
 * Cloudflare Worker provider integration for AI alt suggestions.
-* Manual review actions: Approve, Reject, Skip Image, and Custom Alt Text.
+* Queue review actions: Approve, Skip Image, and Retrieve Alt Text.
 * Queue and history flow for reviewed items.
-* Attachment modal review panel for upload-time decisions.
+* Attachment details button to Retrieve Alt Text directly into the Alternative Text field.
+* Mobile/tablet responsive queue layout improvements.
 * Cleanup of plugin queue/meta data when an attachment is deleted.
-* Admin-only visibility for plugin pages and actions.
+* Role-based access control for queue visibility and actions.
 
 Request/response contract:
 * Sends POST JSON to worker with: `image_url`, `context`, `rules`
@@ -30,18 +31,18 @@ Request/response contract:
 == Installation ==
 1. Upload the plugin to `/wp-content/plugins/dynamic-alt-tags`.
 2. Activate it from Plugins.
-3. Go to Media > Dynamic Alt Tags Settings.
+3. Go to Settings > Dynamic Alt Tags.
 4. Add your Worker URL and token, then click Test Provider Connection.
-5. Process queue items from Settings or review from Queue/Attachment modal.
+5. Process queue items from Settings or review from Media > Dynamic Alt Tags.
 
 == Usage ==
-1. Open Media > Dynamic Alt Tags Settings and configure provider credentials.
+1. Open Settings > Dynamic Alt Tags and configure provider credentials.
 2. Run queue processing from Settings and monitor progress.
-3. Review pending suggestions in Media > Dynamic Alt Tags Queue.
-4. In the media Attachment details modal, use the Dynamic Alt Tags Review panel to apply actions directly.
+3. Review pending suggestions in Media > Dynamic Alt Tags.
+4. In Attachment Details, click Retrieve Alt Text to generate and apply alt text.
 
 == Permissions ==
-Only WordPress administrators should have access to plugin management pages and actions.
+Administrators always have full access. Additional roles can be granted queue-page access from Settings > Dynamic Alt Tags under Access Control.
 
 == Changelog ==
 = 0.1.0 =

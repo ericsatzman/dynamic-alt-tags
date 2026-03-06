@@ -90,7 +90,6 @@ class WPAI_Alt_Text_Settings {
 
 		$fields = array(
 			'worker_url'          => __( 'Cloudflare Worker URL', 'dynamic-alt-tags' ),
-			'cloudflare_account'  => __( 'Cloudflare Account ID', 'dynamic-alt-tags' ),
 			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
 			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
@@ -296,9 +295,6 @@ class WPAI_Alt_Text_Settings {
 			$step // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		);
 
-		if ( 'cloudflare_account' === $id ) {
-			echo '<p class="description">' . esc_html__( 'Optional. Currently not used by this plugin when calling your Worker URL directly.', 'dynamic-alt-tags' ) . '</p>';
-		}
 	}
 
 	/**

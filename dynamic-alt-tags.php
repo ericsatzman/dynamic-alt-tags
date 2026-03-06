@@ -1,11 +1,13 @@
 <?php
 /**
  * Plugin Name:       Dynamic Alt Tags
+ * Plugin URI:        https://github.com/ericsatzman/dynamic-alt-tags
  * Description:       Generate and manage AI-suggested alt text for WordPress images.
  * Version:           0.1.0
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Eric Satzman
+ * Author URI:        mailto:esatzman@ucop.edu
  * Text Domain:       dynamic-alt-tags
  * Domain Path:       /languages
  *
