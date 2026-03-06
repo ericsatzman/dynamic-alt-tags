@@ -16,20 +16,21 @@ Current git state:
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `666ef16` - Refine plugin access controls and settings UI
+- `67e9597` - Refresh handoff document for current project state
 
 Recent commits (newest first):
-1. `666ef16` Refine plugin access controls and settings UI
-2. `3e99eea` Add role-based queue access and admin-only settings access
-3. `5877e34` Improve iPhone queue responsiveness with stacked mobile rows
-4. `e58b1a0` Add mobile/tablet responsive CSS without desktop changes
-5. `1a64c53` Refine attachment retrieve behavior for finalized and active states
-6. `dbeb6d0` Restore attachment retrieve button to bottom placement
-7. `1fa16f9` Update history columns and make thumbnails clickable
-8. `c1fe55e` Reorder row actions to place Skip before retrieve
-9. `cac5ac2` Add composer license to satisfy strict validation
-10. `3b75cb9` Add title sync option handling in processor
-11. `171a1f5` Add auto-apply alt text option for new uploads
+1. `67e9597` Refresh handoff document for current project state
+2. `666ef16` Refine plugin access controls and settings UI
+3. `3e99eea` Add role-based queue access and admin-only settings access
+4. `5877e34` Improve iPhone queue responsiveness with stacked mobile rows
+5. `e58b1a0` Add mobile/tablet responsive CSS without desktop changes
+6. `1a64c53` Refine attachment retrieve behavior for finalized and active states
+7. `dbeb6d0` Restore attachment retrieve button to bottom placement
+8. `1fa16f9` Update history columns and make thumbnails clickable
+9. `c1fe55e` Reorder row actions to place Skip before retrieve
+10. `cac5ac2` Add composer license to satisfy strict validation
+11. `3b75cb9` Add title sync option handling in processor
+12. `171a1f5` Add auto-apply alt text option for new uploads
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -124,7 +125,7 @@ Queue page template: `admin/views-page-queue.php`
 
 ### Row buttons and labels
 - Active row buttons include: `Approve`, `Skip Image`, `Retrieve Alt Text`, `View Image`
-- Row `Reject` button removed.
+- Row `Reject` button removed (bulk actions still include `Reject`).
 - Top page process button text is `Retrieve Alt Text`.
 
 ### Thumbnail behavior
