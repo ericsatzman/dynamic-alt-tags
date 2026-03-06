@@ -16,9 +16,9 @@ Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and
 Key features:
 * Queue-based processing for media library images.
 * Cloudflare Worker provider integration for AI alt suggestions.
-* Queue review actions: Approve, Skip Image, and Retrieve Alt Text.
+* Queue review actions: Approve, Skip Image, and Generate Alt Text.
 * Queue and history flow for reviewed items.
-* Attachment details button to Retrieve Alt Text directly into the Alternative Text field.
+* Attachment details button to Generate Alt Text directly into the Alternative Text field.
 * Mobile/tablet responsive queue layout improvements.
 * Cleanup of plugin queue/meta data when an attachment is deleted.
 * Role-based access control for queue visibility and actions.
@@ -39,7 +39,10 @@ Request/response contract:
 1. Open Settings > Dynamic Alt Tags and configure provider credentials.
 2. Run queue processing from Settings and monitor progress.
 3. Review pending suggestions in Media > Dynamic Alt Tags.
-4. In Attachment Details, click Retrieve Alt Text to generate and apply alt text.
+4. In Attachment Details, click Generate Alt Text to generate and apply alt text.
+
+Detailed documentation:
+* See `USER-GUIDE.md` in this plugin directory for a full setup and workflow guide.
 
 == Permissions ==
 Administrators always have full access. Additional roles can be granted queue-page access from Settings > Dynamic Alt Tags under Access Control.
