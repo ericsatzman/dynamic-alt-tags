@@ -862,6 +862,11 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		$saved = get_option( self::CONNECTION_STATUS_OPTION_KEY, array() );
+		$checked_at = '';
+		if ( is_array( $saved ) && ! empty( $saved['checked_at'] ) ) {
+			$checked_at = sanitize_text_field( (string) $saved['checked_at'] );
+		}
+
 		if ( is_array( $saved ) && ! empty( $saved['status'] ) ) {
 			$saved_status  = 'success' === sanitize_key( (string) $saved['status'] ) ? 'success' : 'error';
 			$saved_message = isset( $saved['message'] ) ? sanitize_text_field( (string) $saved['message'] ) : '';
@@ -882,22 +887,29 @@ class WPAI_Alt_Text_Admin {
 		$latest_failed = $this->queue_repo->get_latest_failed_row();
 		$queue_error   = '';
 		if ( is_array( $latest_failed ) ) {
-			$queue_error = isset( $latest_failed['error_message'] ) ? sanitize_text_field( (string) $latest_failed['error_message'] ) : '';
-			if ( '' === $queue_error && ! empty( $latest_failed['error_code'] ) ) {
-				$queue_error = sprintf(
-					/* translators: %s error code */
-					__( 'Latest queue failure code: %s', 'dynamic-alt-tags' ),
-					sanitize_key( (string) $latest_failed['error_code'] )
-				);
+			$failed_at_raw = isset( $latest_failed['updated_at'] ) ? sanitize_text_field( (string) $latest_failed['updated_at'] ) : '';
+			$show_failure  = true;
+			if ( '' !== $checked_at && '' !== $failed_at_raw ) {
+				$checked_ts = strtotime( $checked_at );
+				$failed_ts  = strtotime( $failed_at_raw );
+				if ( false !== $checked_ts && false !== $failed_ts && $failed_ts <= $checked_ts ) {
+					$show_failure = false;
+				}
+			}
+
+			if ( $show_failure ) {
+				$queue_error = isset( $latest_failed['error_message'] ) ? sanitize_text_field( (string) $latest_failed['error_message'] ) : '';
+				if ( '' === $queue_error && ! empty( $latest_failed['error_code'] ) ) {
+					$queue_error = sprintf(
+						/* translators: %s error code */
+						__( 'Latest queue failure code: %s', 'dynamic-alt-tags' ),
+						sanitize_key( (string) $latest_failed['error_code'] )
+					);
+				}
 			}
 			if ( '' !== $queue_error && 'error' !== $state ) {
 				$state = 'warning';
 			}
-		}
-
-		$checked_at = '';
-		if ( is_array( $saved ) && ! empty( $saved['checked_at'] ) ) {
-			$checked_at = sanitize_text_field( (string) $saved['checked_at'] );
 		}
 
 		return array(
