@@ -24,7 +24,7 @@ Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and
 1. Upload the plugin to `/wp-content/plugins/dynamic-alt-tags`.
 2. Activate it from **Plugins**.
 3. Go to **Settings > Dynamic Alt Tags**.
-4. Add your Worker URL and token.
+4. Add your Cloudflare Worker URL and Cloudflare token.
 5. Click **Test Provider Connection** and save.
 
 ## Usage
