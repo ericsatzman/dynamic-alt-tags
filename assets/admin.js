@@ -1002,7 +1002,7 @@
 
 			function finishQueueTopError(messageText) {
 				window.clearInterval(queueTimer);
-				setQueueProgress(100, messageText, 'error');
+				setQueueProgress(100, '', '');
 				window.setTimeout(function () {
 					redirectQueueNotice('queue_error', { queue_msg: messageText });
 				}, 250);
@@ -1115,7 +1115,7 @@
 				var mixedMessage = processedCount > 0
 					? 'Processed ' + processedCount + ' images, ' + failureCount + ' failed.'
 					: (i18n.rowError || 'Image processing failed. Please try again.');
-				setQueueProgress(percent, mixedMessage, 'error');
+				setQueueProgress(percent, '', '');
 				window.setTimeout(function () {
 					redirectQueueNotice('queue_error', { queue_msg: mixedMessage });
 				}, 250);
