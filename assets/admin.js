@@ -475,12 +475,12 @@
 				resultNode.textContent = message;
 				resultNode.classList.add('ai-alt-message-success');
 
-					// Generate creates/refreshes a suggestion only; do not overwrite the current alt field value.
-					var shouldUpdateAltField = reviewAction !== 'generate' && payload.data && typeof payload.data.alt_text !== 'undefined';
+					var shouldUpdateAltField = payload.data && typeof payload.data.alt_text !== 'undefined';
 					if (shouldUpdateAltField) {
 						var altText = String(payload.data.alt_text);
 						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-						applyAltAndTitleAcrossUi(attachmentId, altText, Boolean(adminData && adminData.syncTitleFromAlt), container);
+						var shouldSyncTitle = reviewAction === 'generate' ? true : Boolean(adminData && adminData.syncTitleFromAlt);
+						applyAltAndTitleAcrossUi(attachmentId, altText, shouldSyncTitle, container);
 					}
 
 					if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
@@ -563,7 +563,7 @@
 						return;
 					}
 					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-					applyAltAndTitleAcrossUi(attachmentId, altText, Boolean(adminData && adminData.syncTitleFromAlt), container);
+					applyAltAndTitleAcrossUi(attachmentId, altText, true, container);
 				}
 			})
 			.catch(function () {

@@ -510,25 +510,18 @@ class WPAI_Alt_Text_Plugin {
 				$status = 'queued';
 			}
 
-			if ( 'skipped' === $status ) {
+			if ( in_array( $status, array( 'skipped', 'approved', 'rejected' ), true ) ) {
 				$requeued = $this->queue_repo->enqueue_or_requeue( $attachment_id, 0 );
 				if ( ! $requeued ) {
 					return array(
 						'ok'      => false,
-						'message' => __( 'Unable to requeue this skipped image for generation.', 'dynamic-alt-tags' ),
+						'message' => __( 'Unable to requeue this image for generation.', 'dynamic-alt-tags' ),
 					);
 				}
 				$row_before = $this->queue_repo->get_row_by_attachment( $attachment_id );
 				$status     = is_array( $row_before ) && isset( $row_before['status'] ) ? sanitize_key( (string) $row_before['status'] ) : 'queued';
 				$suggested  = is_array( $row_before ) && isset( $row_before['suggested_alt'] ) ? sanitize_text_field( (string) $row_before['suggested_alt'] ) : '';
 				$row_id     = is_array( $row_before ) && isset( $row_before['id'] ) ? absint( $row_before['id'] ) : 0;
-			}
-
-			if ( in_array( $status, array( 'approved', 'rejected' ), true ) ) {
-				return array(
-					'ok'      => false,
-					'message' => __( 'This image is finalized in History. Requeue it from the Queue page to generate new alt text.', 'dynamic-alt-tags' ),
-				);
 			}
 
 			if ( 'generated' === $status && $row_id > 0 && '' !== $suggested ) {

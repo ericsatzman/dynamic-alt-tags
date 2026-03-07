@@ -167,7 +167,7 @@ class WPAI_Alt_Text_Settings {
 
 		add_settings_section(
 			'ai_alt_text_access_section',
-			__( 'Access Control', 'dynamic-alt-tags' ),
+			__( 'Access', 'dynamic-alt-tags' ),
 			'__return_false',
 			'ai-alt-text-settings'
 		);

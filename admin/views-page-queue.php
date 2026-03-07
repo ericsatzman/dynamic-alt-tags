@@ -259,11 +259,6 @@ if ( '' !== $last_processed_at ) {
 			</table>
 		</div>
 
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ai-alt-metrics-reset-form">
-			<input type="hidden" name="action" value="ai_alt_reset_metrics" />
-			<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
-			<?php submit_button( __( 'Reset Metrics', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
-		</form>
 	<?php else : ?>
 		<?php if ( ! $is_history && ! $is_no_alt ) : ?>
 			<div class="ai-alt-progress-wrap" id="ai-alt-queue-progress-wrap" hidden>
