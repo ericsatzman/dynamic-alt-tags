@@ -128,18 +128,22 @@
 	function applyAltAndTitleAcrossUi(attachmentId, altText, syncTitle, container) {
 		var shouldSyncTitle = Boolean(syncTitle);
 		var updateOnce = function () {
-			if (container instanceof HTMLElement) {
-				setAltFieldValue(container, altText, attachmentId);
-				if (shouldSyncTitle) {
-					setTitleFieldValue(container, altText, attachmentId);
+			try {
+				if (container instanceof HTMLElement) {
+					setAltFieldValue(container, altText, attachmentId);
+					if (shouldSyncTitle) {
+						setTitleFieldValue(container, altText, attachmentId);
+					}
 				}
+				setAltFieldValue(document, altText, attachmentId);
+				if (shouldSyncTitle) {
+					setTitleFieldValue(document, altText, attachmentId);
+				}
+				setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle);
+				setActiveSelectionModelFields(altText, altText, shouldSyncTitle);
+			} catch (e) {
+				// Never turn a successful server response into a UI error due to local binding issues.
 			}
-			setAltFieldValue(document, altText, attachmentId);
-			if (shouldSyncTitle) {
-				setTitleFieldValue(document, altText, attachmentId);
-			}
-			setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle);
-			setActiveSelectionModelFields(altText, altText, shouldSyncTitle);
 		};
 
 		// Re-apply after short delays because the grid sidebar can re-render asynchronously.
@@ -324,6 +328,9 @@
 					hideUploadActionHint(select);
 				})
 			.catch(function () {
+				if (resultNode.classList.contains('ai-alt-message-success')) {
+					return;
+				}
 				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
 				resultNode.classList.add('ai-alt-message-error');
 			})
@@ -398,6 +405,9 @@
 				}
 			})
 			.catch(function () {
+				if (resultNode.classList.contains('ai-alt-message-success')) {
+					return;
+				}
 				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
 				resultNode.classList.add('ai-alt-message-error');
 			})
