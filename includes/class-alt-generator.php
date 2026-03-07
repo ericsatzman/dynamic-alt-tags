@@ -46,6 +46,8 @@ class WPAI_Alt_Text_Generator {
 			}
 		}
 
+		$text = $this->ensure_complete_sentence( $text );
+
 		if ( '' !== $text ) {
 			$text = ucfirst( $text );
 		}
@@ -70,5 +72,54 @@ class WPAI_Alt_Text_Generator {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Trim likely cut-off endings so saved alt text reads as a complete sentence.
+	 *
+	 * @param string $text Candidate alt text.
+	 * @return string
+	 */
+	private function ensure_complete_sentence( $text ) {
+		$text = trim( (string) $text );
+		if ( '' === $text ) {
+			return '';
+		}
+
+		if ( preg_match( '/[.!?]["\')\]]*$/', $text ) ) {
+			return $text;
+		}
+
+		$sentence_pos = max(
+			(int) strrpos( $text, '.' ),
+			(int) strrpos( $text, '!' ),
+			(int) strrpos( $text, '?' )
+		);
+		if ( $sentence_pos > 0 ) {
+			return trim( substr( $text, 0, $sentence_pos + 1 ) );
+		}
+
+		$clause_pos = max(
+			(int) strrpos( $text, ',' ),
+			(int) strrpos( $text, ';' ),
+			(int) strrpos( $text, ':' )
+		);
+		if ( $clause_pos > 20 ) {
+			$text = trim( substr( $text, 0, $clause_pos ) );
+		}
+
+		while ( preg_match( '/\b(and|or|with|without|to|for|from|in|on|at|by|of|the|a|an)\s*$/i', $text ) ) {
+			$text = trim( preg_replace( '/\b(and|or|with|without|to|for|from|in|on|at|by|of|the|a|an)\s*$/i', '', $text ) );
+			$text = rtrim( $text, " \t\n\r\0\x0B,;:-" );
+			if ( '' === $text ) {
+				return '';
+			}
+		}
+
+		if ( '' !== $text && ! preg_match( '/[.!?]["\')\]]*$/', $text ) ) {
+			$text .= '.';
+		}
+
+		return $text;
 	}
 }
