@@ -17,7 +17,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 	$active_tab = 'metrics';
 }
 ?>
-<div class="wrap ai-alt-wrap">
+<div class="wrap ai-alt-wrap ai-alt-settings-page">
 	<h1><?php esc_html_e( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ); ?></h1>
 	<?php settings_errors( 'ai_alt_text_options_group' ); ?>
 

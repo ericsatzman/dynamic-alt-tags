@@ -133,6 +133,326 @@
 	cursor: pointer;
 }
 
+.ai-alt-settings-page {
+	--ai-alt-slate-900: #1f2a3a;
+	--ai-alt-slate-800: #2f3f57;
+	--ai-alt-slate-700: #40536f;
+	--ai-alt-slate-200: #d7deea;
+	--ai-alt-slate-100: #edf1f7;
+	--ai-alt-accent: #0f9ed5;
+	--ai-alt-accent-dark: #0b7fae;
+	--ai-alt-text: #243246;
+}
+
+.ai-alt-settings-page h1 {
+	color: var(--ai-alt-text);
+	font-weight: 600;
+	margin-bottom: 14px;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs {
+	background: var(--ai-alt-slate-100);
+	border: 1px solid var(--ai-alt-slate-200);
+	border-radius: 10px;
+	padding: 14px;
+	max-width: 1000px;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .nav-tab-wrapper {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	border-bottom: 0;
+	background: var(--ai-alt-slate-800);
+	border-radius: 8px;
+	padding: 10px;
+	margin: 0 0 14px;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .nav-tab {
+	float: none;
+	margin: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: #d5e0ef;
+	font-weight: 500;
+	line-height: 1;
+	padding: 11px 14px;
+	transition: background-color 140ms ease, color 140ms ease;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .nav-tab:hover,
+.ai-alt-settings-page #ai-alt-settings-tabs .nav-tab:focus {
+	background: rgba(255, 255, 255, 0.12);
+	color: #ffffff;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .nav-tab.nav-tab-active {
+	background: var(--ai-alt-slate-700);
+	color: #ffffff;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-settings-tab-panel {
+	background: #ffffff;
+	border: 1px solid var(--ai-alt-slate-200);
+	border-radius: 8px;
+	padding: 18px 18px 14px;
+	margin-top: 0;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .form-table th {
+	color: var(--ai-alt-text);
+	font-weight: 600;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .description {
+	color: #5a6880;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs input[type="text"],
+.ai-alt-settings-page #ai-alt-settings-tabs input[type="number"],
+.ai-alt-settings-page #ai-alt-settings-tabs input[type="password"],
+.ai-alt-settings-page #ai-alt-settings-tabs textarea,
+.ai-alt-settings-page #ai-alt-settings-tabs select {
+	border-color: #b8c7da;
+	border-radius: 5px;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs input[type="text"]:focus,
+.ai-alt-settings-page #ai-alt-settings-tabs input[type="number"]:focus,
+.ai-alt-settings-page #ai-alt-settings-tabs input[type="password"]:focus,
+.ai-alt-settings-page #ai-alt-settings-tabs textarea:focus,
+.ai-alt-settings-page #ai-alt-settings-tabs select:focus {
+	border-color: var(--ai-alt-accent);
+	box-shadow: 0 0 0 1px var(--ai-alt-accent);
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .button-primary {
+	background: var(--ai-alt-accent);
+	border-color: var(--ai-alt-accent-dark);
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .button-primary:hover,
+.ai-alt-settings-page #ai-alt-settings-tabs .button-primary:focus {
+	background: var(--ai-alt-accent-dark);
+	border-color: var(--ai-alt-accent-dark);
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .button-secondary {
+	border-color: #7e95b4;
+	color: #2f4a6a;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .button-secondary:hover,
+.ai-alt-settings-page #ai-alt-settings-tabs .button-secondary:focus {
+	border-color: var(--ai-alt-accent);
+	color: var(--ai-alt-accent-dark);
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-metric-card {
+	border: 1px solid #2271b1;
+	border-radius: 6px;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-metric-card span {
+	color: #1e344f;
+}
+
+.ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-metrics-table {
+	border-color: #b6c7dd;
+}
+
+.ai-alt-queue-page {
+	--ai-alt-slate-900: #1f2a3a;
+	--ai-alt-slate-800: #2f3f57;
+	--ai-alt-slate-700: #40536f;
+	--ai-alt-slate-200: #d7deea;
+	--ai-alt-slate-100: #edf1f7;
+	--ai-alt-accent: #0f9ed5;
+	--ai-alt-accent-dark: #0b7fae;
+	--ai-alt-text: #243246;
+}
+
+.ai-alt-queue-page h1 {
+	color: var(--ai-alt-text);
+	font-weight: 600;
+	margin-bottom: 14px;
+}
+
+.ai-alt-queue-page .nav-tab-wrapper {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	border-bottom: 0;
+	background: transparent;
+	border-radius: 0;
+	padding: 0;
+	margin: 0;
+	width: auto;
+	box-sizing: border-box;
+	min-height: 0;
+	align-items: center;
+}
+
+.ai-alt-queue-page .nav-tab-wrapper .nav-tab {
+	float: none;
+	margin: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: #d5e0ef;
+	font-weight: 500;
+	line-height: 1;
+	padding: 11px 14px;
+	transition: background-color 140ms ease, color 140ms ease;
+}
+
+.ai-alt-queue-page .nav-tab-wrapper .nav-tab:hover,
+.ai-alt-queue-page .nav-tab-wrapper .nav-tab:focus {
+	background: rgba(255, 255, 255, 0.12);
+	color: #ffffff;
+}
+
+.ai-alt-queue-page .nav-tab-wrapper .nav-tab.nav-tab-active {
+	background: var(--ai-alt-slate-700);
+	color: #ffffff;
+}
+
+.ai-alt-queue-page .ai-alt-queue-header-bar {
+	background: var(--ai-alt-slate-800);
+	border-radius: 10px;
+	padding: 12px 16px;
+	margin: 0 0 14px;
+	width: 100%;
+	box-sizing: border-box;
+	min-height: 68px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.ai-alt-queue-page .ai-alt-queue-tabs {
+	flex: 1 1 auto;
+	border-bottom: 0 !important;
+	padding-bottom: 0;
+	margin-bottom: 0;
+}
+
+.ai-alt-queue-page .ai-alt-queue-process-top {
+	float: none;
+	position: static;
+	top: auto;
+	right: auto;
+	z-index: auto;
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+	width: auto;
+	box-sizing: border-box;
+}
+
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary {
+	background: var(--ai-alt-slate-700);
+	border-color: rgba(255, 255, 255, 0.14);
+	color: #dfe8f4;
+	border-radius: 6px;
+	min-height: 34px;
+	padding: 0 14px;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	text-shadow: none;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+	transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary:hover,
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary:focus {
+	background: rgba(255, 255, 255, 0.16);
+	border-color: rgba(255, 255, 255, 0.18);
+	color: #ffffff;
+	transform: none;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary:focus-visible {
+	outline: 2px solid rgba(157, 196, 234, 0.9);
+	outline-offset: 1px;
+}
+
+.ai-alt-queue-page .ai-alt-table {
+	border: 1px solid var(--ai-alt-slate-200);
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.ai-alt-queue-page .ai-alt-table th {
+	background: #f6f8fc;
+	color: #2d3d55;
+}
+
+.ai-alt-queue-page .ai-alt-table td {
+	border-top-color: #dde5f1;
+}
+
+.ai-alt-queue-page .ai-alt-table textarea.ai-alt-row-suggested {
+	border-color: #2271b1;
+	background: #fdfefe;
+}
+
+.ai-alt-queue-page .ai-alt-table textarea.ai-alt-row-suggested:focus {
+	border-color: var(--ai-alt-accent);
+	box-shadow: 0 0 0 1px var(--ai-alt-accent);
+}
+
+.ai-alt-queue-page .button-primary {
+	background: var(--ai-alt-accent);
+	border-color: var(--ai-alt-accent-dark);
+}
+
+.ai-alt-queue-page .button-primary:hover,
+.ai-alt-queue-page .button-primary:focus {
+	background: var(--ai-alt-accent-dark);
+	border-color: var(--ai-alt-accent-dark);
+}
+
+.ai-alt-queue-page .button:not(.button-primary) {
+	border-color: #7e95b4;
+	color: #2f4a6a;
+}
+
+.ai-alt-queue-page .button:not(.button-primary):hover,
+.ai-alt-queue-page .button:not(.button-primary):focus {
+	border-color: var(--ai-alt-accent);
+	color: var(--ai-alt-accent-dark);
+}
+
+.ai-alt-queue-page .tablenav .actions select {
+	border-color: #b8c7da;
+	border-radius: 5px;
+}
+
+.ai-alt-queue-page .ai-alt-table .button.button-primary {
+	background: var(--ai-alt-slate-800);
+	border-color: rgba(255, 255, 255, 0.14);
+	color: #dfe8f4;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.ai-alt-queue-page .ai-alt-table .button.button-primary:hover,
+.ai-alt-queue-page .ai-alt-table .button.button-primary:focus {
+	background: var(--ai-alt-slate-700);
+	border-color: rgba(255, 255, 255, 0.18);
+	color: #ffffff;
+}
+
 .ai-alt-wrap .ai-alt-metrics-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -196,6 +516,17 @@
 
 	.ai-alt-wrap .ai-alt-queue-process-top form {
 		margin: 0 8px 8px 0;
+	}
+
+	.ai-alt-queue-page .ai-alt-queue-header-bar {
+		padding: 10px;
+		min-height: 0;
+	}
+
+	.ai-alt-queue-page .ai-alt-queue-tabs,
+	.ai-alt-queue-page .ai-alt-queue-process-top {
+		width: 100%;
+		padding: 10px;
 	}
 
 	.ai-alt-wrap .ai-alt-table {

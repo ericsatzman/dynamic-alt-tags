@@ -31,15 +31,57 @@ if ( $page_num > 1 ) {
 	$refresh_args['paged'] = $page_num;
 }
 ?>
-<div class="wrap ai-alt-wrap">
+<div class="wrap ai-alt-wrap ai-alt-queue-page">
 	<h1><?php esc_html_e( 'Dynamic Alt Tags', 'dynamic-alt-tags' ); ?></h1>
-	<?php if ( ! $is_history && ! $is_no_alt ) : ?>
-		<div class="ai-alt-queue-process-top">
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="ai_alt_run_backfill_queue" />
-				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
-				<button type="submit" class="button button-primary"><?php esc_html_e( 'Run Backfill', 'dynamic-alt-tags' ); ?></button>
-			</form>
+	<div class="ai-alt-queue-header-bar">
+		<h2 class="nav-tab-wrapper ai-alt-queue-tabs">
+			<a class="nav-tab <?php echo $is_history || $is_no_alt ? '' : 'nav-tab-active'; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'active',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'Active Queue', 'dynamic-alt-tags' ); ?></a>
+			<a class="nav-tab <?php echo $is_history ? 'nav-tab-active' : ''; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'history',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></a>
+			<a class="nav-tab <?php echo $is_no_alt ? 'nav-tab-active' : ''; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'no_alt',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
+		</h2>
+		<?php if ( ! $is_history && ! $is_no_alt ) : ?>
+			<div class="ai-alt-queue-process-top">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="ai_alt_run_backfill_queue" />
+					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
+					<button type="submit" class="button button-primary"><?php esc_html_e( 'Run Backfill', 'dynamic-alt-tags' ); ?></button>
+				</form>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ai-alt-queue-process-form">
 					<input type="hidden" name="action" value="ai_alt_process_now_queue" />
 					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
@@ -47,49 +89,8 @@ if ( $page_num > 1 ) {
 				</form>
 				<a class="button button-primary" href="<?php echo esc_url( add_query_arg( $refresh_args, admin_url( 'upload.php' ) ) ); ?>"><?php esc_html_e( 'Refresh', 'dynamic-alt-tags' ); ?></a>
 			</div>
-	<?php endif; ?>
-
-	<h2 class="nav-tab-wrapper">
-		<a class="nav-tab <?php echo $is_history || $is_no_alt ? '' : 'nav-tab-active'; ?>" href="
-		<?php
-		echo esc_url(
-			add_query_arg(
-				array(
-					'page' => 'ai-alt-text-queue',
-					'view' => 'active',
-				),
-				admin_url( 'upload.php' )
-			)
-		);
-		?>
-		"><?php esc_html_e( 'Active Queue', 'dynamic-alt-tags' ); ?></a>
-		<a class="nav-tab <?php echo $is_history ? 'nav-tab-active' : ''; ?>" href="
-		<?php
-		echo esc_url(
-			add_query_arg(
-				array(
-					'page' => 'ai-alt-text-queue',
-					'view' => 'history',
-				),
-				admin_url( 'upload.php' )
-			)
-		);
-		?>
-		"><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></a>
-		<a class="nav-tab <?php echo $is_no_alt ? 'nav-tab-active' : ''; ?>" href="
-		<?php
-		echo esc_url(
-			add_query_arg(
-				array(
-					'page' => 'ai-alt-text-queue',
-					'view' => 'no_alt',
-				),
-				admin_url( 'upload.php' )
-			)
-		);
-		?>
-		"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
-	</h2>
+		<?php endif; ?>
+	</div>
 
 	<?php if ( isset( $_GET['notice'] ) && 'queue_updated' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
 		<div class="notice notice-success is-dismissible">
