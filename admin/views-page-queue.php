@@ -35,6 +35,7 @@ $is_no_alt    = 'no_alt' === $view;
 					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 					<button type="submit" class="button button-primary"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></button>
 				</form>
+				<a class="button button-primary" href="<?php echo esc_url( add_query_arg( array() ) ); ?>"><?php esc_html_e( 'Refresh', 'dynamic-alt-tags' ); ?></a>
 			</div>
 	<?php endif; ?>
 
