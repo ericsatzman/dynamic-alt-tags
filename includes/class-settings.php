@@ -269,6 +269,10 @@ class WPAI_Alt_Text_Settings {
 				$current['allowed_roles'] = array_values( array_unique( $roles ) );
 			}
 		}
+		if ( ! in_array( 'administrator', $current['allowed_roles'], true ) ) {
+			array_unshift( $current['allowed_roles'], 'administrator' );
+			$current['allowed_roles'] = array_values( array_unique( $current['allowed_roles'] ) );
+		}
 
 		return $current;
 	}
@@ -308,12 +312,14 @@ class WPAI_Alt_Text_Settings {
 				}
 			);
 			foreach ( $sortable_roles as $role_item ) {
+				$is_administrator_role = 'administrator' === (string) $role_item['key'];
 				printf(
-					'<label style="display:block; margin-bottom:6px;"><input type="checkbox" name="%1$s[]" value="%2$s" %3$s /> %4$s</label>',
+					'<label style="display:block; margin-bottom:6px;"><input type="checkbox" name="%1$s[]" value="%2$s" %3$s %5$s /> %4$s</label>',
 					esc_attr( $name ),
 					esc_attr( (string) $role_item['key'] ),
-					checked( true, in_array( (string) $role_item['key'], $selected_roles, true ), false ),
-					esc_html( (string) $role_item['label'] )
+					checked( true, $is_administrator_role ? true : in_array( (string) $role_item['key'], $selected_roles, true ), false ),
+					esc_html( (string) $role_item['label'] ),
+					$is_administrator_role ? 'class="ai-alt-admin-role-lock"' : ''
 				);
 			}
 			echo '<p class="description">' . esc_html__( 'Administrator always has full access. Selected roles can access only the Dynamic Alt Tags Queue page under Media.', 'dynamic-alt-tags' ) . '</p>';

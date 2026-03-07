@@ -118,6 +118,7 @@ class WPAI_Alt_Text_Admin {
 				'queueProcessNonce'  => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 				'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 				'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
+				'settingsMetricsNonce' => wp_create_nonce( 'ai_alt_settings_metrics_ajax' ),
 				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
 				'syncTitleFromAlt'   => ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] ),
 				'i18n'               => array(
@@ -200,7 +201,7 @@ class WPAI_Alt_Text_Admin {
 				'notice'   => 'backfill_done',
 				'enqueued' => $count,
 			),
-			admin_url( 'upload.php' )
+			admin_url( 'options-general.php' )
 		);
 
 		wp_safe_redirect( $redirect );
@@ -258,7 +259,7 @@ class WPAI_Alt_Text_Admin {
 					'notice'    => 'process_done',
 					'processed' => $processed,
 				),
-				admin_url( 'upload.php' )
+				admin_url( 'options-general.php' )
 			);
 		} else {
 			$message  = $this->get_zero_processed_message( $before, $after );
@@ -268,7 +269,7 @@ class WPAI_Alt_Text_Admin {
 					'notice'      => 'process_error',
 					'process_msg' => rawurlencode( $message ),
 				),
-				admin_url( 'upload.php' )
+				admin_url( 'options-general.php' )
 			);
 		}
 
@@ -336,7 +337,7 @@ class WPAI_Alt_Text_Admin {
 				'page'   => 'ai-alt-text-settings',
 				'notice' => 'metrics_reset',
 			),
-			admin_url( 'upload.php' )
+			admin_url( 'options-general.php' )
 		);
 
 		wp_safe_redirect( $redirect );
@@ -497,6 +498,30 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Added to queue', 'dynamic-alt-tags' ) ) );
+	}
+
+	/**
+	 * Get settings metrics via AJAX.
+	 *
+	 * @return void
+	 */
+	public function handle_settings_metrics_ajax() {
+		if ( ! $this->current_user_can_view_settings() ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'ai_alt_settings_metrics_ajax' );
+
+		wp_send_json_success(
+			array(
+				'fields' => $this->get_settings_metrics_fields(),
+			)
+		);
 	}
 
 	/**
@@ -779,7 +804,7 @@ class WPAI_Alt_Text_Admin {
 				'test_status' => rawurlencode( $status ),
 				'test_msg'    => rawurlencode( $message ),
 			),
-			admin_url( 'upload.php' )
+			admin_url( 'options-general.php' )
 		);
 
 		wp_safe_redirect( $redirect );
@@ -1055,6 +1080,53 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Build settings metrics display values keyed by DOM id.
+	 *
+	 * @return array<string,string>
+	 */
+	private function get_settings_metrics_fields() {
+		$metrics  = $this->settings->get_metrics();
+		$coverage = $this->queue_repo->get_image_alt_coverage_counts();
+
+		$total_images          = isset( $coverage['total_images'] ) ? absint( $coverage['total_images'] ) : 0;
+		$images_with_alt       = isset( $coverage['with_alt'] ) ? absint( $coverage['with_alt'] ) : 0;
+		$images_without_alt    = isset( $coverage['without_alt'] ) ? absint( $coverage['without_alt'] ) : 0;
+		$total_processed       = isset( $metrics['total_images_processed'] ) ? absint( $metrics['total_images_processed'] ) : 0;
+		$success_count         = isset( $metrics['success_count'] ) ? absint( $metrics['success_count'] ) : 0;
+		$failure_count         = isset( $metrics['failure_count'] ) ? absint( $metrics['failure_count'] ) : 0;
+		$provider_call_count   = isset( $metrics['provider_call_count'] ) ? absint( $metrics['provider_call_count'] ) : 0;
+		$total_processing_ms   = isset( $metrics['total_processing_time_ms'] ) ? (float) $metrics['total_processing_time_ms'] : 0.0;
+		$total_provider_ms     = isset( $metrics['total_provider_latency_ms'] ) ? (float) $metrics['total_provider_latency_ms'] : 0.0;
+		$last_processing_ms    = isset( $metrics['last_processing_time_ms'] ) ? (float) $metrics['last_processing_time_ms'] : 0.0;
+		$last_provider_latency = isset( $metrics['last_provider_latency_ms'] ) ? (float) $metrics['last_provider_latency_ms'] : 0.0;
+		$average_processing_ms = $total_processed > 0 ? $total_processing_ms / $total_processed : 0.0;
+		$average_provider_ms   = $provider_call_count > 0 ? $total_provider_ms / $provider_call_count : 0.0;
+		$last_processed_at     = isset( $metrics['last_processed_at'] ) ? sanitize_text_field( (string) $metrics['last_processed_at'] ) : '';
+		$last_processed_text   = '';
+
+		if ( '' !== $last_processed_at ) {
+			$last_processed_text = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last_processed_at );
+			if ( ! is_string( $last_processed_text ) || '' === $last_processed_text ) {
+				$last_processed_text = $last_processed_at;
+			}
+		}
+
+		return array(
+			'ai-alt-metric-total-images'             => number_format_i18n( $total_images ),
+			'ai-alt-metric-images-with-alt'          => number_format_i18n( $images_with_alt ),
+			'ai-alt-metric-images-without-alt'       => number_format_i18n( $images_without_alt ),
+			'ai-alt-metric-total-processed'          => number_format_i18n( $total_processed ),
+			'ai-alt-metric-success-count'            => number_format_i18n( $success_count ),
+			'ai-alt-metric-failure-count'            => number_format_i18n( $failure_count ),
+			'ai-alt-metric-average-processing'       => number_format_i18n( $average_processing_ms, 2 ) . ' ms',
+			'ai-alt-metric-average-provider-latency' => number_format_i18n( $average_provider_ms, 2 ) . ' ms',
+			'ai-alt-metric-last-processing'          => number_format_i18n( $last_processing_ms, 2 ) . ' ms',
+			'ai-alt-metric-last-provider-latency'    => number_format_i18n( $last_provider_latency, 2 ) . ' ms',
+			'ai-alt-metric-last-processed-at'        => '' !== $last_processed_text ? $last_processed_text : __( 'Not yet recorded', 'dynamic-alt-tags' ),
+		);
 	}
 
 	/**

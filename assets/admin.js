@@ -233,6 +233,164 @@
 		});
 	}
 
+	function initSettingsTabs() {
+		var container = document.getElementById('ai-alt-settings-tabs');
+		if (!(container instanceof HTMLElement)) {
+			return;
+		}
+
+		var tabButtons = container.querySelectorAll('.ai-alt-settings-tab');
+		var tabPanels = container.querySelectorAll('.ai-alt-settings-tab-panel');
+		if (!tabButtons.length || !tabPanels.length) {
+			return;
+		}
+
+		container.classList.add('ai-alt-settings-tabs-ready');
+
+		function activateTab(tabKey) {
+			tabButtons.forEach(function (button) {
+				if (!(button instanceof HTMLButtonElement)) {
+					return;
+				}
+				var buttonTab = String(button.getAttribute('data-tab-target') || '');
+				var isActive = buttonTab === tabKey;
+				button.classList.toggle('nav-tab-active', isActive);
+				button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+				button.setAttribute('tabindex', isActive ? '0' : '-1');
+			});
+
+			tabPanels.forEach(function (panel) {
+				if (!(panel instanceof HTMLElement)) {
+					return;
+				}
+				var panelTab = String(panel.getAttribute('data-tab-panel') || '');
+				var isActive = panelTab === tabKey;
+				panel.hidden = !isActive;
+			});
+
+			try {
+				window.sessionStorage.setItem('aiAltSettingsTab', tabKey);
+			} catch (e) {
+				// Ignore sessionStorage availability errors.
+			}
+		}
+
+		var availableTabs = [];
+		tabButtons.forEach(function (button) {
+			if (!(button instanceof HTMLButtonElement)) {
+				return;
+			}
+			var key = String(button.getAttribute('data-tab-target') || '');
+			if (key) {
+				availableTabs.push(key);
+			}
+			button.addEventListener('click', function () {
+				activateTab(key);
+			});
+		});
+
+		if (!availableTabs.length) {
+			return;
+		}
+
+		var initialTab = String(container.getAttribute('data-default-tab') || availableTabs[0]);
+		try {
+			var storedTab = window.sessionStorage.getItem('aiAltSettingsTab');
+			if (storedTab && availableTabs.indexOf(storedTab) !== -1) {
+				initialTab = storedTab;
+			}
+		} catch (e) {
+			// Ignore sessionStorage availability errors.
+		}
+
+		if (availableTabs.indexOf(initialTab) === -1) {
+			initialTab = availableTabs[0];
+		}
+
+		activateTab(initialTab);
+	}
+
+	function initSettingsMetricsRefresh() {
+		var metricsPanel = document.getElementById('ai-alt-settings-panel-metrics');
+		if (!(metricsPanel instanceof HTMLElement)) {
+			return;
+		}
+
+		var adminData = window.aiAltAdmin || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.settingsMetricsNonce === 'string' ? adminData.settingsMetricsNonce : '';
+		if (!ajaxUrl || !nonce || typeof window.fetch !== 'function') {
+			return;
+		}
+
+		var isRequestInFlight = false;
+
+		function applyMetricFields(fields) {
+			if (!fields || typeof fields !== 'object') {
+				return;
+			}
+
+			Object.keys(fields).forEach(function (fieldId) {
+				var node = document.getElementById(fieldId);
+				if (!(node instanceof HTMLElement)) {
+					return;
+				}
+				node.textContent = String(fields[fieldId]);
+			});
+		}
+
+		function refreshMetrics() {
+			if (isRequestInFlight || metricsPanel.hidden) {
+				return;
+			}
+
+			isRequestInFlight = true;
+			var body = new URLSearchParams();
+			body.append('action', 'ai_alt_settings_metrics_ajax');
+			body.append('_ajax_nonce', nonce);
+
+			fetch(ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+				},
+				body: body.toString()
+			})
+				.then(function (response) {
+					return response.json();
+				})
+				.then(function (payload) {
+					if (!payload || payload.success !== true || !payload.data || typeof payload.data.fields !== 'object') {
+						return;
+					}
+					applyMetricFields(payload.data.fields);
+				})
+				.catch(function () {
+					return;
+				})
+				.finally(function () {
+					isRequestInFlight = false;
+				});
+		}
+
+		var metricsTabButton = document.querySelector('.ai-alt-settings-tab[data-tab-target="metrics"]');
+		if (metricsTabButton instanceof HTMLButtonElement) {
+			metricsTabButton.addEventListener('click', function () {
+				window.setTimeout(refreshMetrics, 75);
+			});
+		}
+
+		document.addEventListener('visibilitychange', function () {
+			if (!document.hidden) {
+				refreshMetrics();
+			}
+		});
+
+		window.setInterval(refreshMetrics, 15000);
+		refreshMetrics();
+	}
+
 	function applyUploadAction(trigger, select, customInput, resultNode) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -781,6 +939,10 @@
 
 	document.addEventListener('change', function (event) {
 		var target = event.target;
+		if (target instanceof HTMLInputElement && target.classList.contains('ai-alt-admin-role-lock')) {
+			target.checked = true;
+			return;
+		}
 		if (target instanceof HTMLInputElement && target.classList.contains('ai-alt-select-all')) {
 			var checked = target.checked;
 			var checkboxes = document.querySelectorAll('.ai-alt-row-checkbox');
@@ -826,6 +988,14 @@
 		document.addEventListener('DOMContentLoaded', function () {
 			clearPluginPageNotices();
 			placeRetrieveButtons();
+			initSettingsTabs();
+			initSettingsMetricsRefresh();
+			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
+			lockedAdminRoleCheckboxes.forEach(function (checkbox) {
+				if (checkbox instanceof HTMLInputElement) {
+					checkbox.checked = true;
+				}
+			});
 
 			var selects = document.querySelectorAll('select.ai-alt-upload-action');
 			selects.forEach(function (select) {

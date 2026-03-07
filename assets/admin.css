@@ -111,6 +111,19 @@
 	margin-top: 14px;
 }
 
+.ai-alt-wrap .ai-alt-settings-tabs {
+	margin-top: 12px;
+	max-width: 980px;
+}
+
+.ai-alt-wrap .ai-alt-settings-tab-panel {
+	margin-top: 14px;
+}
+
+.ai-alt-wrap .ai-alt-settings-tabs-ready .ai-alt-settings-tab {
+	cursor: pointer;
+}
+
 .ai-alt-wrap .ai-alt-metrics-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
