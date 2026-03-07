@@ -124,7 +124,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 
 	<div id="ai-alt-settings-tabs" class="ai-alt-settings-tabs" data-default-tab="<?php echo esc_attr( $active_tab ); ?>">
 		<div class="nav-tab-wrapper" role="tablist" aria-label="<?php esc_attr_e( 'Settings sections', 'dynamic-alt-tags' ); ?>">
-			<button type="button" class="nav-tab ai-alt-settings-tab" data-tab-target="metrics" role="tab" aria-controls="ai-alt-settings-panel-metrics"><?php esc_html_e( 'Metrics', 'dynamic-alt-tags' ); ?></button>
+			<button type="button" class="nav-tab ai-alt-settings-tab" data-tab-target="metrics" role="tab" aria-controls="ai-alt-settings-panel-metrics"><?php esc_html_e( 'Dashboard', 'dynamic-alt-tags' ); ?></button>
 			<button type="button" class="nav-tab ai-alt-settings-tab" data-tab-target="settings" role="tab" aria-controls="ai-alt-settings-panel-settings"><?php esc_html_e( 'Settings', 'dynamic-alt-tags' ); ?></button>
 			<button type="button" class="nav-tab ai-alt-settings-tab" data-tab-target="tools" role="tab" aria-controls="ai-alt-settings-panel-tools"><?php esc_html_e( 'Tools', 'dynamic-alt-tags' ); ?></button>
 			<button type="button" class="nav-tab ai-alt-settings-tab" data-tab-target="access-control" role="tab" aria-controls="ai-alt-settings-panel-access-control"><?php esc_html_e( 'Access', 'dynamic-alt-tags' ); ?></button>
@@ -171,7 +171,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 		</div>
 
 		<div id="ai-alt-settings-panel-metrics" class="ai-alt-settings-tab-panel" data-tab-panel="metrics" role="tabpanel" hidden>
-			<h2><?php esc_html_e( 'Metrics', 'dynamic-alt-tags' ); ?></h2>
+			<h2><?php esc_html_e( 'Dashboard', 'dynamic-alt-tags' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Live attachment coverage and cumulative processing metrics.', 'dynamic-alt-tags' ); ?></p>
 
 			<div class="ai-alt-metrics-grid">

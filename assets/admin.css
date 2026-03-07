@@ -2,6 +2,15 @@
 	vertical-align: top;
 }
 
+.ai-alt-wrap .ai-alt-table[data-view="history"] {
+	table-layout: fixed;
+}
+
+.ai-alt-wrap .ai-alt-table[data-view="history"] th:nth-child(4),
+.ai-alt-wrap .ai-alt-table[data-view="history"] td:nth-child(4) {
+	width: 22%;
+}
+
 .ai-alt-wrap .ai-alt-queue-process-top {
 	float: right;
 	margin-top: 0;

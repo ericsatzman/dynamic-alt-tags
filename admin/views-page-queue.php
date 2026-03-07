@@ -173,9 +173,9 @@ if ( $page_num > 1 ) {
 					<label class="screen-reader-text" for="bulk-action-selector-top"><?php esc_html_e( 'Select bulk action', 'dynamic-alt-tags' ); ?></label>
 					<select name="bulk_action" id="bulk-action-selector-top">
 						<option value="-1"><?php esc_html_e( 'Bulk actions', 'dynamic-alt-tags' ); ?></option>
-						<option value="process"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></option>
 						<option value="approve"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></option>
 						<option value="skip"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></option>
+						<option value="process"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></option>
 					</select>
 					<button type="submit" class="button action"><?php esc_html_e( 'Apply', 'dynamic-alt-tags' ); ?></button>
 				</div>
@@ -199,7 +199,6 @@ if ( $page_num > 1 ) {
 					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
 				<?php elseif ( $is_history ) : ?>
 					<th><?php esc_html_e( 'Status', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Confidence', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Alt Text', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Processed On', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
@@ -215,7 +214,7 @@ if ( $page_num > 1 ) {
 		<tbody id="ai-alt-queue-tbody">
 			<?php if ( empty( $rows ) ) : ?>
 				<tr>
-					<td colspan="<?php echo $is_no_alt ? '4' : ( $is_history ? '6' : '7' ); ?>"><?php esc_html_e( 'No queue items found.', 'dynamic-alt-tags' ); ?></td>
+					<td colspan="<?php echo $is_no_alt ? '4' : ( $is_history ? '5' : '7' ); ?>"><?php esc_html_e( 'No queue items found.', 'dynamic-alt-tags' ); ?></td>
 				</tr>
 			<?php else : ?>
 				<?php
@@ -235,9 +234,9 @@ if ( $page_num > 1 ) {
 				<label class="screen-reader-text" for="bulk-action-selector-bottom"><?php esc_html_e( 'Select bulk action', 'dynamic-alt-tags' ); ?></label>
 				<select name="bulk_action2" id="bulk-action-selector-bottom">
 					<option value="-1"><?php esc_html_e( 'Bulk actions', 'dynamic-alt-tags' ); ?></option>
-					<option value="process"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></option>
 					<option value="approve"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></option>
 					<option value="skip"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></option>
+					<option value="process"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></option>
 				</select>
 				<button type="submit" class="button action"><?php esc_html_e( 'Apply', 'dynamic-alt-tags' ); ?></button>
 			</div>

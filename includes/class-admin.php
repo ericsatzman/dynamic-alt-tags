@@ -577,7 +577,9 @@ class WPAI_Alt_Text_Admin {
 					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 				</td>
 				<td><code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code></td>
-				<td class="ai-alt-row-confidence"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
+				<?php if ( ! $is_history ) : ?>
+					<td class="ai-alt-row-confidence"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
+				<?php endif; ?>
 				<td>
 					<?php if ( $is_history ) : ?>
 						<?php echo '' !== trim( $display_alt ) ? esc_html( $display_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?>
@@ -599,6 +601,12 @@ class WPAI_Alt_Text_Admin {
 							<?php if ( in_array( $status, array( 'queued', 'failed', 'generated' ), true ) ) : ?>
 								<button class="button ai-alt-row-process" type="button" data-row-id="<?php echo esc_attr( (string) $row_id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'ai_alt_queue_process_ajax' ) ); ?>"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></button>
 							<?php endif; ?>
+						<?php else : ?>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-right:8px;">
+								<input type="hidden" name="action" value="ai_alt_queue_action" />
+								<?php wp_nonce_field( 'ai_alt_queue_action', 'ai_alt_queue_nonce' ); ?>
+								<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'requeue|' . $row_id ); ?>"><?php esc_html_e( 'Re-queue', 'dynamic-alt-tags' ); ?></button>
+							</form>
 						<?php endif; ?>
 					<?php if ( ! empty( $image_url ) ) : ?>
 						<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>
@@ -912,7 +920,7 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_queue_action', 'ai_alt_queue_nonce' );
 
-		$allowed_actions = array( 'approve', 'reject', 'skip', 'process' );
+		$allowed_actions = array( 'approve', 'reject', 'skip', 'process', 'requeue' );
 		$updated_count   = 0;
 
 		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
@@ -1040,6 +1048,9 @@ class WPAI_Alt_Text_Admin {
 		} elseif ( 'process' === $action ) {
 			$message = '';
 			return $this->process_queue_row( $row_id, $message );
+		} elseif ( 'requeue' === $action ) {
+			$post_id = isset( $row['post_id'] ) ? absint( $row['post_id'] ) : 0;
+			return $this->queue_repo->enqueue_or_requeue( $attachment_id, $post_id );
 		}
 
 		return false;
