@@ -24,6 +24,26 @@
 		});
 	}
 
+	function setTitleFieldValue(scope, value, attachmentId) {
+		var selectors = [
+			'input[data-setting="title"]',
+			'#attachment-details-two-column-title',
+			'input#title',
+			'input[name="attachments[' + attachmentId + '][post_title]"]'
+		];
+
+		selectors.forEach(function (selector) {
+			var nodes = (scope || document).querySelectorAll(selector);
+			nodes.forEach(function (node) {
+				if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+					node.value = value;
+					node.dispatchEvent(new Event('input', { bubbles: true }));
+					node.dispatchEvent(new Event('change', { bubbles: true }));
+				}
+			});
+		});
+	}
+
 	function setUploadApplyVisibility(select) {
 		if (!(select instanceof HTMLSelectElement)) {
 			return;
@@ -191,8 +211,14 @@
 						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 						if (container instanceof HTMLElement) {
 							setAltFieldValue(container, altText, attachmentId);
+							if (adminData && adminData.syncTitleFromAlt) {
+								setTitleFieldValue(container, altText, attachmentId);
+							}
 						}
 						setAltFieldValue(document, altText, attachmentId);
+						if (adminData && adminData.syncTitleFromAlt) {
+							setTitleFieldValue(document, altText, attachmentId);
+						}
 					}
 
 					if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
@@ -268,11 +294,20 @@
 
 				if (payload.data && typeof payload.data.alt_text !== 'undefined') {
 					var altText = String(payload.data.alt_text || '');
+					if (!altText.trim()) {
+						return;
+					}
 					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 					if (container instanceof HTMLElement) {
 						setAltFieldValue(container, altText, attachmentId);
+						if (adminData && adminData.syncTitleFromAlt) {
+							setTitleFieldValue(container, altText, attachmentId);
+						}
 					}
 					setAltFieldValue(document, altText, attachmentId);
+					if (adminData && adminData.syncTitleFromAlt) {
+						setTitleFieldValue(document, altText, attachmentId);
+					}
 				}
 			})
 			.catch(function () {

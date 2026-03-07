@@ -538,6 +538,10 @@ class WPAI_Alt_Text_Plugin {
 						'message'  => __( 'The suggested alt text is retrieved and applied.', 'dynamic-alt-tags' ),
 					);
 				}
+				return array(
+					'ok'      => false,
+					'message' => __( 'A suggestion exists, but it could not be applied. Please try again.', 'dynamic-alt-tags' ),
+				);
 			}
 
 			if ( 'processing' === $status ) {
@@ -562,13 +566,16 @@ class WPAI_Alt_Text_Plugin {
 						'message'  => __( 'The suggested alt text is retrieved and applied.', 'dynamic-alt-tags' ),
 					);
 				}
+				return array(
+					'ok'      => false,
+					'message' => __( 'A suggestion was generated, but it could not be applied. Please try again.', 'dynamic-alt-tags' ),
+				);
 			}
 
 			return array(
-				'ok'            => (bool) $generated,
-				'alt_text'      => '',
+				'ok'            => false,
 				'message'       => $generated
-					? __( 'A suggested alt text was generated.', 'dynamic-alt-tags' )
+					? __( 'A suggestion was generated, but it was not applied. Please run Generate Alt Text again.', 'dynamic-alt-tags' )
 					: __( 'Unable to generate suggested alt text for this image. Check provider settings/logs.', 'dynamic-alt-tags' ),
 				'status'        => $status,
 				'suggested_alt' => $suggested,

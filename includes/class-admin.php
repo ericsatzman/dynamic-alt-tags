@@ -92,6 +92,7 @@ class WPAI_Alt_Text_Admin {
 		if ( false === strpos( $hook_suffix, 'ai-alt-text' ) && ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
 			return;
 		}
+		$options = $this->settings->get_options();
 
 		wp_enqueue_style(
 			'dynamic-alt-tags-admin',
@@ -118,6 +119,7 @@ class WPAI_Alt_Text_Admin {
 				'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 				'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
 				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
+				'syncTitleFromAlt'   => ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] ),
 				'i18n'               => array(
 					'processing'         => __( 'Processing queue...', 'dynamic-alt-tags' ),
 					'success'            => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
