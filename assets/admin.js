@@ -5,6 +5,7 @@
 		var selectors = [
 			'input[data-setting="alt"]',
 			'textarea[data-setting="alt"]',
+			'[data-setting="alt"]',
 			'#attachment-details-two-column-alt-text',
 			'input#attachment_alt',
 			'textarea#attachment_alt',
@@ -27,6 +28,7 @@
 	function setTitleFieldValue(scope, value, attachmentId) {
 		var selectors = [
 			'input[data-setting="title"]',
+			'[data-setting="title"]',
 			'#attachment-details-two-column-title',
 			'input#title',
 			'input[name="attachments[' + attachmentId + '][post_title]"]'
@@ -42,6 +44,109 @@
 				}
 			});
 		});
+	}
+
+	function setMediaModelFields(attachmentId, altText, titleText, syncTitle) {
+		if (!window.wp || !window.wp.media) {
+			return;
+		}
+
+		var numericId = Number(attachmentId);
+		if (!numericId) {
+			return;
+		}
+
+		var model = null;
+		var frame = window.wp.media.frame;
+
+		try {
+			if (frame && typeof frame.state === 'function') {
+				var state = frame.state();
+				if (state && typeof state.get === 'function') {
+					var selection = state.get('selection');
+					if (selection && typeof selection.get === 'function') {
+						model = selection.get(numericId) || selection.get(String(numericId));
+					}
+				}
+			}
+		} catch (e) {
+			model = null;
+		}
+
+		if (!model && typeof window.wp.media.attachment === 'function') {
+			model = window.wp.media.attachment(numericId);
+		}
+
+		if (!model || typeof model.set !== 'function') {
+			return;
+		}
+
+		if (typeof altText === 'string' && altText.trim()) {
+			model.set('alt', altText);
+		}
+		if (syncTitle && typeof titleText === 'string' && titleText.trim()) {
+			model.set('title', titleText);
+		}
+		if (typeof model.trigger === 'function') {
+			model.trigger('change');
+		}
+	}
+
+	function setActiveSelectionModelFields(altText, titleText, syncTitle) {
+		if (!window.wp || !window.wp.media || !window.wp.media.frame || typeof window.wp.media.frame.state !== 'function') {
+			return;
+		}
+
+		try {
+			var state = window.wp.media.frame.state();
+			if (!state || typeof state.get !== 'function') {
+				return;
+			}
+			var selection = state.get('selection');
+			if (!selection || typeof selection.first !== 'function') {
+				return;
+			}
+			var model = selection.first();
+			if (!model || typeof model.set !== 'function') {
+				return;
+			}
+
+			if (typeof altText === 'string' && altText.trim()) {
+				model.set('alt', altText);
+			}
+			if (syncTitle && typeof titleText === 'string' && titleText.trim()) {
+				model.set('title', titleText);
+			}
+			if (typeof model.trigger === 'function') {
+				model.trigger('change');
+			}
+		} catch (e) {
+			// Ignore media-frame state access errors.
+		}
+	}
+
+	function applyAltAndTitleAcrossUi(attachmentId, altText, syncTitle, container) {
+		var shouldSyncTitle = Boolean(syncTitle);
+		var updateOnce = function () {
+			if (container instanceof HTMLElement) {
+				setAltFieldValue(container, altText, attachmentId);
+				if (shouldSyncTitle) {
+					setTitleFieldValue(container, altText, attachmentId);
+				}
+			}
+			setAltFieldValue(document, altText, attachmentId);
+			if (shouldSyncTitle) {
+				setTitleFieldValue(document, altText, attachmentId);
+			}
+			setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle);
+			setActiveSelectionModelFields(altText, altText, shouldSyncTitle);
+		};
+
+		// Re-apply after short delays because the grid sidebar can re-render asynchronously.
+		updateOnce();
+		window.setTimeout(updateOnce, 120);
+		window.setTimeout(updateOnce, 360);
+		window.setTimeout(updateOnce, 800);
 	}
 
 	function setUploadApplyVisibility(select) {
@@ -209,16 +314,7 @@
 					if (shouldUpdateAltField) {
 						var altText = String(payload.data.alt_text);
 						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-						if (container instanceof HTMLElement) {
-							setAltFieldValue(container, altText, attachmentId);
-							if (adminData && adminData.syncTitleFromAlt) {
-								setTitleFieldValue(container, altText, attachmentId);
-							}
-						}
-						setAltFieldValue(document, altText, attachmentId);
-						if (adminData && adminData.syncTitleFromAlt) {
-							setTitleFieldValue(document, altText, attachmentId);
-						}
+						applyAltAndTitleAcrossUi(attachmentId, altText, Boolean(adminData && adminData.syncTitleFromAlt), container);
 					}
 
 					if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
@@ -298,16 +394,7 @@
 						return;
 					}
 					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-					if (container instanceof HTMLElement) {
-						setAltFieldValue(container, altText, attachmentId);
-						if (adminData && adminData.syncTitleFromAlt) {
-							setTitleFieldValue(container, altText, attachmentId);
-						}
-					}
-					setAltFieldValue(document, altText, attachmentId);
-					if (adminData && adminData.syncTitleFromAlt) {
-						setTitleFieldValue(document, altText, attachmentId);
-					}
+					applyAltAndTitleAcrossUi(attachmentId, altText, Boolean(adminData && adminData.syncTitleFromAlt), container);
 				}
 			})
 			.catch(function () {
