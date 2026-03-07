@@ -4,7 +4,7 @@
 Dynamic Alt Tags is a WordPress plugin that generates image alt text through a Cloudflare Worker, supports queue/history review workflows, and allows per-image generation from Media Attachment Details.
 
 Plugin path:
-- `/Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags`
+- `/Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags`
 
 Repository:
 - `https://github.com/ericsatzman/dynamic-alt-tags.git`
@@ -242,7 +242,7 @@ Implemented in `includes/class-alt-generator.php`.
 
 ### Local checks
 - PHPCS:
-  - `composer -d /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
+  - `composer -d /Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
 ## 13) Documentation Status
 - Primary WordPress readme: `readme.txt`
@@ -280,10 +280,10 @@ Implemented in `includes/class-alt-generator.php`.
 
 ## 17) Resume Checklist for New Codex Window
 1. Confirm status:
-- `git -C /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags status -sb`
+- `git -C /Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags status -sb`
 
 2. Validate coding standards:
-- `composer -d /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
+- `composer -d /Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
 3. Validate core flows in WP admin:
 - Settings page admin-only access.
