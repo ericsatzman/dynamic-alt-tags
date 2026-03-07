@@ -604,6 +604,7 @@ class WPAI_Alt_Text_Admin {
 						<?php else : ?>
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-right:8px;">
 								<input type="hidden" name="action" value="ai_alt_queue_action" />
+								<input type="hidden" name="return_view" value="history" />
 								<?php wp_nonce_field( 'ai_alt_queue_action', 'ai_alt_queue_nonce' ); ?>
 								<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'requeue|' . $row_id ); ?>"><?php esc_html_e( 'Re-queue', 'dynamic-alt-tags' ); ?></button>
 							</form>
@@ -922,6 +923,8 @@ class WPAI_Alt_Text_Admin {
 
 		$allowed_actions = array( 'approve', 'reject', 'skip', 'process', 'requeue' );
 		$updated_count   = 0;
+		$return_view     = isset( $_POST['return_view'] ) ? sanitize_key( wp_unslash( $_POST['return_view'] ) ) : '';
+		$return_view     = in_array( $return_view, array( 'active', 'history', 'no_alt' ), true ) ? $return_view : '';
 
 		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
 		if ( '' !== $single_action ) {
@@ -947,14 +950,15 @@ class WPAI_Alt_Text_Admin {
 				$notice = 'queue_process_done';
 			}
 
-			$redirect = add_query_arg(
-				array(
-					'page'    => 'ai-alt-text-queue',
-					'notice'  => $notice,
-					'updated' => $updated_count,
-				),
-				admin_url( 'upload.php' )
+			$redirect_args = array(
+				'page'    => 'ai-alt-text-queue',
+				'notice'  => $notice,
+				'updated' => $updated_count,
 			);
+			if ( '' !== $return_view ) {
+				$redirect_args['view'] = $return_view;
+			}
+			$redirect = add_query_arg( $redirect_args, admin_url( 'upload.php' ) );
 
 			wp_safe_redirect( $redirect );
 			exit;
@@ -965,14 +969,15 @@ class WPAI_Alt_Text_Admin {
 			}
 
 			if ( ! in_array( $bulk_action, $allowed_actions, true ) ) {
-				$redirect = add_query_arg(
-					array(
-						'page'      => 'ai-alt-text-queue',
-						'notice'    => 'queue_error',
-						'queue_msg' => rawurlencode( __( 'Please select a bulk action before clicking Apply.', 'dynamic-alt-tags' ) ),
-					),
-					admin_url( 'upload.php' )
+				$redirect_args = array(
+					'page'      => 'ai-alt-text-queue',
+					'notice'    => 'queue_error',
+					'queue_msg' => rawurlencode( __( 'Please select a bulk action before clicking Apply.', 'dynamic-alt-tags' ) ),
 				);
+				if ( '' !== $return_view ) {
+					$redirect_args['view'] = $return_view;
+				}
+				$redirect = add_query_arg( $redirect_args, admin_url( 'upload.php' ) );
 
 				wp_safe_redirect( $redirect );
 				exit;
@@ -995,14 +1000,15 @@ class WPAI_Alt_Text_Admin {
 			}
 		}
 
-		$redirect = add_query_arg(
-			array(
-				'page'    => 'ai-alt-text-queue',
-				'notice'  => 'queue_updated',
-				'updated' => $updated_count,
-			),
-			admin_url( 'upload.php' )
+		$redirect_args = array(
+			'page'    => 'ai-alt-text-queue',
+			'notice'  => 'queue_updated',
+			'updated' => $updated_count,
 		);
+		if ( '' !== $return_view ) {
+			$redirect_args['view'] = $return_view;
+		}
+		$redirect = add_query_arg( $redirect_args, admin_url( 'upload.php' ) );
 
 		wp_safe_redirect( $redirect );
 		exit;
