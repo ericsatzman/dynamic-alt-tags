@@ -153,6 +153,8 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		$connection_status = $this->get_connection_status();
+		$metrics           = $this->settings->get_metrics();
+		$coverage          = $this->queue_repo->get_image_alt_coverage_counts();
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-settings.php';
 	}
@@ -311,6 +313,31 @@ class WPAI_Alt_Text_Admin {
 				admin_url( 'upload.php' )
 			);
 		}
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Reset cumulative metrics.
+	 *
+	 * @return void
+	 */
+	public function handle_reset_metrics() {
+		if ( ! $this->current_user_can_view_settings() ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
+		}
+
+		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
+		$this->settings->reset_metrics();
+
+		$redirect = add_query_arg(
+			array(
+				'page'   => 'ai-alt-text-settings',
+				'notice' => 'metrics_reset',
+			),
+			admin_url( 'upload.php' )
+		);
 
 		wp_safe_redirect( $redirect );
 		exit;

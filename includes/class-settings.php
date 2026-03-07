@@ -19,6 +19,13 @@ class WPAI_Alt_Text_Settings {
 	const OPTION_KEY = 'ai_alt_text_options';
 
 	/**
+	 * Metrics option key.
+	 *
+	 * @var string
+	 */
+	const METRICS_OPTION_KEY = 'ai_alt_text_metrics';
+
+	/**
 	 * Get options with defaults.
 	 *
 	 * @return array<string,mixed>
@@ -53,6 +60,83 @@ class WPAI_Alt_Text_Settings {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Get processing metrics with defaults.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function get_metrics() {
+		$defaults = array(
+			'total_images_processed'   => 0,
+			'success_count'            => 0,
+			'failure_count'            => 0,
+			'provider_call_count'      => 0,
+			'total_processing_time_ms' => 0.0,
+			'total_provider_latency_ms' => 0.0,
+			'last_processing_time_ms'  => 0.0,
+			'last_provider_latency_ms' => 0.0,
+			'last_processed_at'        => '',
+		);
+
+		$raw = get_option( self::METRICS_OPTION_KEY, array() );
+		if ( ! is_array( $raw ) ) {
+			$raw = array();
+		}
+
+		$metrics = wp_parse_args( $raw, $defaults );
+
+		$metrics['total_images_processed']    = max( 0, absint( $metrics['total_images_processed'] ) );
+		$metrics['success_count']             = max( 0, absint( $metrics['success_count'] ) );
+		$metrics['failure_count']             = max( 0, absint( $metrics['failure_count'] ) );
+		$metrics['provider_call_count']       = max( 0, absint( $metrics['provider_call_count'] ) );
+		$metrics['total_processing_time_ms']  = max( 0.0, (float) $metrics['total_processing_time_ms'] );
+		$metrics['total_provider_latency_ms'] = max( 0.0, (float) $metrics['total_provider_latency_ms'] );
+		$metrics['last_processing_time_ms']   = max( 0.0, (float) $metrics['last_processing_time_ms'] );
+		$metrics['last_provider_latency_ms']  = max( 0.0, (float) $metrics['last_provider_latency_ms'] );
+		$metrics['last_processed_at']         = is_string( $metrics['last_processed_at'] ) ? sanitize_text_field( $metrics['last_processed_at'] ) : '';
+
+		return $metrics;
+	}
+
+	/**
+	 * Persist processing metrics.
+	 *
+	 * @param array<string,mixed> $event Metric event values.
+	 * @return void
+	 */
+	public function record_processing_metrics( $event ) {
+		$metrics = $this->get_metrics();
+
+		$is_success          = ! empty( $event['success'] );
+		$provider_call_count = ! empty( $event['provider_called'] ) ? 1 : 0;
+		$processing_time_ms  = isset( $event['processing_time_ms'] ) ? max( 0.0, (float) $event['processing_time_ms'] ) : 0.0;
+		$provider_latency_ms = isset( $event['provider_latency_ms'] ) ? max( 0.0, (float) $event['provider_latency_ms'] ) : 0.0;
+
+		$metrics['total_images_processed'] += 1;
+		if ( $is_success ) {
+			$metrics['success_count'] += 1;
+		} else {
+			$metrics['failure_count'] += 1;
+		}
+		$metrics['provider_call_count']       += $provider_call_count;
+		$metrics['total_processing_time_ms']  += $processing_time_ms;
+		$metrics['total_provider_latency_ms'] += $provider_latency_ms;
+		$metrics['last_processing_time_ms']    = $processing_time_ms;
+		$metrics['last_provider_latency_ms']   = $provider_latency_ms;
+		$metrics['last_processed_at']          = current_time( 'mysql' );
+
+		update_option( self::METRICS_OPTION_KEY, $metrics, false );
+	}
+
+	/**
+	 * Reset processing metrics to defaults.
+	 *
+	 * @return void
+	 */
+	public function reset_metrics() {
+		delete_option( self::METRICS_OPTION_KEY );
 	}
 
 	/**

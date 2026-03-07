@@ -111,6 +111,44 @@
 	margin-top: 14px;
 }
 
+.ai-alt-wrap .ai-alt-metrics-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 10px;
+	margin: 12px 0;
+	max-width: 900px;
+}
+
+.ai-alt-wrap .ai-alt-metric-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	padding: 10px 12px;
+}
+
+.ai-alt-wrap .ai-alt-metric-card strong {
+	display: block;
+	font-size: 12px;
+	color: #50575e;
+	margin-bottom: 5px;
+}
+
+.ai-alt-wrap .ai-alt-metric-card span {
+	font-size: 20px;
+	line-height: 1.2;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.ai-alt-wrap .ai-alt-metrics-table {
+	max-width: 900px;
+	margin: 0 0 18px;
+}
+
+.ai-alt-wrap .ai-alt-metrics-reset-form {
+	margin: 0 0 20px;
+}
+
 /* Mobile/tablet responsive overrides. Desktop (>782px) remains unchanged. */
 @media screen and (max-width: 782px) {
 	.ai-alt-wrap .nav-tab-wrapper {

@@ -78,6 +78,10 @@ class WPAI_Alt_Text_Processor {
 		$need_review = ! empty( $options['require_review'] );
 
 		foreach ( $jobs as $job ) {
+			$started_at          = microtime( true );
+			$provider_latency_ms = 0.0;
+			$provider_called     = false;
+
 			$row_id        = isset( $job['id'] ) ? absint( $job['id'] ) : 0;
 			$attachment_id = isset( $job['attachment_id'] ) ? absint( $job['attachment_id'] ) : 0;
 
@@ -87,6 +91,7 @@ class WPAI_Alt_Text_Processor {
 
 			if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
 				$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
+				$this->record_processing_metric( false, $started_at );
 				continue;
 			}
 
@@ -99,6 +104,7 @@ class WPAI_Alt_Text_Processor {
 			$image_url = wp_get_attachment_url( $attachment_id );
 			if ( ! $image_url ) {
 				$this->queue_repo->mark_failed( $row_id, 'missing_image_url', 'Attachment URL not found.' );
+				$this->record_processing_metric( false, $started_at );
 				continue;
 			}
 
@@ -109,7 +115,10 @@ class WPAI_Alt_Text_Processor {
 				'post_title'       => $post_id ? get_the_title( $post_id ) : '',
 			);
 
-			$result = $this->provider->generate_caption( $image_url, $context );
+			$provider_started_at = microtime( true );
+			$result              = $this->provider->generate_caption( $image_url, $context );
+			$provider_latency_ms = $this->elapsed_ms( $provider_started_at );
+			$provider_called     = true;
 			if ( is_wp_error( $result ) ) {
 				$this->queue_repo->mark_failed( $row_id, $result->get_error_code(), $result->get_error_message() );
 				$this->logger->log(
@@ -120,6 +129,7 @@ class WPAI_Alt_Text_Processor {
 						'error'         => $result->get_error_code(),
 					)
 				);
+				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called );
 				continue;
 			}
 
@@ -129,6 +139,7 @@ class WPAI_Alt_Text_Processor {
 
 			if ( ! $this->generator->is_usable_alt( $alt_text ) ) {
 				$this->queue_repo->mark_failed( $row_id, 'bad_alt_output', 'Generated alt text did not pass quality checks.' );
+				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called );
 				continue;
 			}
 
@@ -138,6 +149,7 @@ class WPAI_Alt_Text_Processor {
 				$this->approve_row( $row_id, $alt_text );
 			}
 
+			$this->record_processing_metric( true, $started_at, $provider_latency_ms, $provider_called );
 			++$processed;
 		}
 
@@ -151,6 +163,9 @@ class WPAI_Alt_Text_Processor {
 	 * @return bool
 	 */
 	public function process_attachment_for_review( $attachment_id ) {
+		$started_at    = microtime( true );
+		$provider_time = 0.0;
+
 		$attachment_id = absint( $attachment_id );
 		if ( ! $attachment_id ) {
 			return false;
@@ -168,6 +183,7 @@ class WPAI_Alt_Text_Processor {
 
 		if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
 			$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
+			$this->record_processing_metric( false, $started_at );
 			return false;
 		}
 
@@ -179,6 +195,7 @@ class WPAI_Alt_Text_Processor {
 		$image_url = wp_get_attachment_url( $attachment_id );
 		if ( ! $image_url ) {
 			$this->queue_repo->mark_failed( $row_id, 'missing_image_url', 'Attachment URL not found.' );
+			$this->record_processing_metric( false, $started_at );
 			return false;
 		}
 
@@ -189,9 +206,12 @@ class WPAI_Alt_Text_Processor {
 			'post_title'       => $post_id ? get_the_title( $post_id ) : '',
 		);
 
-		$result = $this->provider->generate_caption( $image_url, $context );
+		$provider_started_at = microtime( true );
+		$result              = $this->provider->generate_caption( $image_url, $context );
+		$provider_time       = $this->elapsed_ms( $provider_started_at );
 		if ( is_wp_error( $result ) ) {
 			$this->queue_repo->mark_failed( $row_id, $result->get_error_code(), $result->get_error_message() );
+			$this->record_processing_metric( false, $started_at, $provider_time, true );
 			return false;
 		}
 
@@ -200,11 +220,13 @@ class WPAI_Alt_Text_Processor {
 		$alt_text   = $this->generator->to_alt_text( $caption );
 		if ( ! $this->generator->is_usable_alt( $alt_text ) ) {
 			$this->queue_repo->mark_failed( $row_id, 'bad_alt_output', 'Generated alt text did not pass quality checks.' );
+			$this->record_processing_metric( false, $started_at, $provider_time, true );
 			return false;
 		}
 
 		$this->queue_repo->mark_generated( $row_id, wp_json_encode( $result ), $alt_text, $confidence );
 		update_post_meta( $attachment_id, '_ai_alt_review_required', 1 );
+		$this->record_processing_metric( true, $started_at, $provider_time, true );
 
 		return true;
 	}
@@ -272,5 +294,35 @@ class WPAI_Alt_Text_Processor {
 		}
 
 		return current_user_can( 'edit_post', $attachment_id );
+	}
+
+	/**
+	 * Convert elapsed seconds to milliseconds.
+	 *
+	 * @param float $started_at Unix timestamp in seconds.
+	 * @return float
+	 */
+	private function elapsed_ms( $started_at ) {
+		return max( 0.0, ( microtime( true ) - (float) $started_at ) * 1000 );
+	}
+
+	/**
+	 * Store processing metric event.
+	 *
+	 * @param bool  $success True when generation succeeded.
+	 * @param float $started_at Start time in seconds.
+	 * @param float $provider_latency_ms Provider latency in milliseconds.
+	 * @param bool  $provider_called Whether a provider request was made.
+	 * @return void
+	 */
+	private function record_processing_metric( $success, $started_at, $provider_latency_ms = 0.0, $provider_called = false ) {
+		$this->settings->record_processing_metrics(
+			array(
+				'success'             => (bool) $success,
+				'provider_called'     => (bool) $provider_called,
+				'processing_time_ms'  => $this->elapsed_ms( $started_at ),
+				'provider_latency_ms' => max( 0.0, (float) $provider_latency_ms ),
+			)
+		);
 	}
 }

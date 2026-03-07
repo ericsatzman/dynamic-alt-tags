@@ -527,6 +527,37 @@ class WPAI_Alt_Text_Queue_Repo {
 	}
 
 	/**
+	 * Get image alt coverage counts.
+	 *
+	 * @return array<string,int>
+	 */
+	public function get_image_alt_coverage_counts() {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			"SELECT
+				COUNT(*) AS total_images,
+				SUM(CASE WHEN pm.meta_value IS NULL OR pm.meta_value = '' THEN 1 ELSE 0 END) AS without_alt
+			 FROM {$wpdb->posts} p
+			 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
+			 WHERE p.post_type = 'attachment'
+			 AND p.post_mime_type LIKE 'image/%'", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		$total_images = is_array( $row ) && isset( $row['total_images'] ) ? absint( $row['total_images'] ) : 0;
+		$without_alt  = is_array( $row ) && isset( $row['without_alt'] ) ? absint( $row['without_alt'] ) : 0;
+		$without_alt  = min( $without_alt, $total_images );
+		$with_alt     = max( 0, $total_images - $without_alt );
+
+		return array(
+			'total_images' => $total_images,
+			'with_alt'     => $with_alt,
+			'without_alt'  => $without_alt,
+		);
+	}
+
+	/**
 	 * Paginate image attachments with empty alt text.
 	 *
 	 * @param int $page Current page.

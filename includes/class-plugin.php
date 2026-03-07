@@ -118,6 +118,7 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'admin_post_ai_alt_run_backfill_queue', array( $this->admin, 'handle_run_backfill_queue' ) );
 		add_action( 'admin_post_ai_alt_process_now', array( $this->admin, 'handle_process_now' ) );
 		add_action( 'admin_post_ai_alt_process_now_queue', array( $this->admin, 'handle_process_now_queue' ) );
+		add_action( 'admin_post_ai_alt_reset_metrics', array( $this->admin, 'handle_reset_metrics' ) );
 		add_action( 'admin_post_ai_alt_test_connection', array( $this->admin, 'handle_test_connection' ) );
 		add_action( 'admin_post_ai_alt_queue_action', array( $this->admin, 'handle_queue_action' ) );
 		add_action( 'wp_ajax_ai_alt_process_now_ajax', array( $this->admin, 'handle_process_now_ajax' ) );

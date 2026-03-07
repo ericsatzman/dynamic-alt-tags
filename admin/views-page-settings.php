@@ -62,6 +62,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	<?php endif; ?>
 
+	<?php if ( isset( $_GET['notice'] ) && 'metrics_reset' === sanitize_key( wp_unslash( $_GET['notice'] ) ) ) : ?>
+		<div class="notice notice-success is-dismissible">
+			<p><?php esc_html_e( 'Metrics were reset successfully.', 'dynamic-alt-tags' ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<form method="post" action="options.php">
 		<?php
 		settings_fields( 'ai_alt_text_options_group' );
@@ -71,6 +77,94 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</form>
 
 	<hr />
+
+	<?php
+	$metrics = isset( $metrics ) && is_array( $metrics ) ? $metrics : array();
+	$coverage = isset( $coverage ) && is_array( $coverage ) ? $coverage : array();
+
+	$total_images            = isset( $coverage['total_images'] ) ? absint( $coverage['total_images'] ) : 0;
+	$images_with_alt         = isset( $coverage['with_alt'] ) ? absint( $coverage['with_alt'] ) : 0;
+	$images_without_alt      = isset( $coverage['without_alt'] ) ? absint( $coverage['without_alt'] ) : 0;
+	$total_processed         = isset( $metrics['total_images_processed'] ) ? absint( $metrics['total_images_processed'] ) : 0;
+	$success_count           = isset( $metrics['success_count'] ) ? absint( $metrics['success_count'] ) : 0;
+	$failure_count           = isset( $metrics['failure_count'] ) ? absint( $metrics['failure_count'] ) : 0;
+	$provider_call_count     = isset( $metrics['provider_call_count'] ) ? absint( $metrics['provider_call_count'] ) : 0;
+	$total_processing_ms     = isset( $metrics['total_processing_time_ms'] ) ? (float) $metrics['total_processing_time_ms'] : 0.0;
+	$total_provider_ms       = isset( $metrics['total_provider_latency_ms'] ) ? (float) $metrics['total_provider_latency_ms'] : 0.0;
+	$last_processing_ms      = isset( $metrics['last_processing_time_ms'] ) ? (float) $metrics['last_processing_time_ms'] : 0.0;
+	$last_provider_latency   = isset( $metrics['last_provider_latency_ms'] ) ? (float) $metrics['last_provider_latency_ms'] : 0.0;
+	$average_processing_ms   = $total_processed > 0 ? $total_processing_ms / $total_processed : 0.0;
+	$average_provider_ms     = $provider_call_count > 0 ? $total_provider_ms / $provider_call_count : 0.0;
+	$last_processed_at       = isset( $metrics['last_processed_at'] ) ? sanitize_text_field( (string) $metrics['last_processed_at'] ) : '';
+	$last_processed_display  = '';
+	if ( '' !== $last_processed_at ) {
+		$last_processed_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last_processed_at );
+		if ( ! is_string( $last_processed_display ) || '' === $last_processed_display ) {
+			$last_processed_display = $last_processed_at;
+		}
+	}
+	?>
+
+	<h2><?php esc_html_e( 'Metrics', 'dynamic-alt-tags' ); ?></h2>
+	<p class="description"><?php esc_html_e( 'Live attachment coverage and cumulative processing metrics.', 'dynamic-alt-tags' ); ?></p>
+
+	<div class="ai-alt-metrics-grid">
+		<div class="ai-alt-metric-card">
+			<strong><?php esc_html_e( 'Images on site', 'dynamic-alt-tags' ); ?></strong>
+			<span><?php echo esc_html( number_format_i18n( $total_images ) ); ?></span>
+		</div>
+		<div class="ai-alt-metric-card">
+			<strong><?php esc_html_e( 'Images with alt tags', 'dynamic-alt-tags' ); ?></strong>
+			<span><?php echo esc_html( number_format_i18n( $images_with_alt ) ); ?></span>
+		</div>
+		<div class="ai-alt-metric-card">
+			<strong><?php esc_html_e( 'Images without alt tags', 'dynamic-alt-tags' ); ?></strong>
+			<span><?php echo esc_html( number_format_i18n( $images_without_alt ) ); ?></span>
+		</div>
+		<div class="ai-alt-metric-card">
+			<strong><?php esc_html_e( 'Total images processed', 'dynamic-alt-tags' ); ?></strong>
+			<span><?php echo esc_html( number_format_i18n( $total_processed ) ); ?></span>
+		</div>
+	</div>
+
+	<table class="widefat striped ai-alt-metrics-table">
+		<tbody>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Success count', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo esc_html( number_format_i18n( $success_count ) ); ?></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Failure count', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo esc_html( number_format_i18n( $failure_count ) ); ?></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Average processing time', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo esc_html( number_format_i18n( $average_processing_ms, 2 ) ); ?> ms</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Average provider latency', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo esc_html( number_format_i18n( $average_provider_ms, 2 ) ); ?> ms</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Last processing time', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo esc_html( number_format_i18n( $last_processing_ms, 2 ) ); ?> ms</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Last provider latency', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo esc_html( number_format_i18n( $last_provider_latency, 2 ) ); ?> ms</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Last processed at', 'dynamic-alt-tags' ); ?></th>
+				<td><?php echo '' !== $last_processed_display ? esc_html( $last_processed_display ) : esc_html__( 'Not yet recorded', 'dynamic-alt-tags' ); ?></td>
+			</tr>
+		</tbody>
+	</table>
+
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ai-alt-metrics-reset-form">
+		<input type="hidden" name="action" value="ai_alt_reset_metrics" />
+		<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
+		<?php submit_button( __( 'Reset Metrics', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
+	</form>
 
 	<h2><?php esc_html_e( 'Tools', 'dynamic-alt-tags' ); ?></h2>
 	<p><?php esc_html_e( 'Backfill scans existing images with empty alt text and adds them to the queue.', 'dynamic-alt-tags' ); ?></p>
