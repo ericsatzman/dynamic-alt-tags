@@ -16,19 +16,19 @@ Current git state:
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `abe6302` - Polish admin UI and add history re-queue action
+- `6ae39f7` - Refine settings tabs and queue/media generation behavior
 
 Recent commits (newest first):
-1. `abe6302` Polish admin UI and add history re-queue action
-2. `394320d` Refine admin motif for settings and queue pages
-3. `2ba6d6f` Improve queue alt-text display and settings/admin UI polish
-4. `4c4b5a7` Refine settings tabs, live metrics refresh, and access role UX
-5. `b67bcae` Add settings metrics dashboard and reset action
-6. `63a019e` Refresh handoff with current state and optimization roadmap
-7. `0dc114d` Prevent false upload-action errors after successful media apply
-8. `c4430de` Stabilize media grid sidebar alt/title field syncing
-9. `c9607e0` Improve media-library generate apply reliability and title sync UI
-10. `0c417ec` Refine queue refresh behavior and harden alt-text truncation
+1. `6ae39f7` Refine settings tabs and queue/media generation behavior
+2. `c343f90` Refine queue tabs, dashboard parity, and active table layout
+3. `4e0f6bd` Hide stale queue failures after successful connection checks
+4. `95565c9` Update handoff paths after repo move
+5. `531be49` Fix queue layout regressions and preserve history tab on re-queue
+6. `6fd4bc6` Refresh handoff for latest settings and queue UI changes
+7. `abe6302` Polish admin UI and add history re-queue action
+8. `394320d` Refine admin motif for settings and queue pages
+9. `2ba6d6f` Improve queue alt-text display and settings/admin UI polish
+10. `4c4b5a7` Refine settings tabs, live metrics refresh, and access role UX
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -68,10 +68,10 @@ Access split by page type:
 Settings are rendered by `includes/class-settings.php` and `admin/views-page-settings.php`.
 
 ### Settings page tabs
-- `Dashboard` (formerly Metrics)
 - `Settings`
 - `Tools`
 - `Access`
+- `Metrics` (tab key remains `metrics`)
 
 ### Current fields
 - Cloudflare Worker URL
@@ -96,7 +96,7 @@ Settings are rendered by `includes/class-settings.php` and `admin/views-page-set
   - Administrator always full access
   - Selected roles get queue page access under Media
 
-### Dashboard tab behavior
+### Metrics tab behavior
 - Shows:
   - Images on site
   - Images with alt tags
@@ -108,6 +108,7 @@ Settings are rendered by `includes/class-settings.php` and `admin/views-page-set
   - Last processed at
 - Includes `Reset Metrics` action.
 - Metrics update live via AJAX every 15s (and on tab open/visibility return), no reload required.
+- Default tab when opening from left menu is `Settings` (notice-based redirects can still open other tabs).
 
 ### Tools tab behavior
 - `Run Backfill`
@@ -122,15 +123,18 @@ Settings are rendered by `includes/class-settings.php` and `admin/views-page-set
 Queue page template: `admin/views-page-queue.php`
 
 ### Views/Tabs
+- Dashboard
 - Active Queue
 - History
 - No Alt Images
+
+Default queue view from left Media menu:
+- `Dashboard`
 
 ### Active Queue columns
 - Image
 - Status
 - Confidence
-- Existing Alt Text
 - Suggested Alt Text
 - Actions
 
@@ -151,6 +155,10 @@ Queue page template: `admin/views-page-queue.php`
 - Active row actions: `Approve`, `Skip Image`, `Generate Alt Text`, `View Image`
 - History row actions: `Re-queue`, `View Image`
 - Top actions: `Run Backfill`, `Generate Alt Text`, `Refresh`
+
+Queue Dashboard behavior:
+- Uses dashboard metrics cards/table (same data set as settings metrics panel).
+- Does **not** include a `Reset Metrics` button.
 
 ### Bulk actions
 - Order now: `Approve`, `Skip Image`, `Generate Alt Text`
@@ -199,8 +207,7 @@ Implemented in `includes/class-plugin.php` and `assets/admin.js`.
 - If no row exists: enqueue + process
 - If status `generated`: apply suggested alt directly
 - If status `processing`: returns “try again” message
-- If status `skipped`: auto-requeue + process
-- If status `approved` or `rejected`: requires requeue from Queue page
+- If status `skipped`, `approved`, or `rejected`: auto-requeue + process
 
 ### Reliability fixes for Media Library grid/right-sidebar
 - Frontend updates both:
@@ -211,6 +218,7 @@ Implemented in `includes/class-plugin.php` and `assets/admin.js`.
 
 ### Alt/title sync behavior
 - Wherever alt text is applied, title sync follows `sync_title_from_alt` (default on).
+- Attachment Details `Generate Alt Text` also updates title field/model in the media UI after successful apply.
 
 ## 8) Alt Text Truncation Behavior
 Implemented in `includes/class-alt-generator.php`.
