@@ -30,7 +30,7 @@ $is_no_alt    = 'no_alt' === $view;
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 				<button type="submit" class="button button-primary"><?php esc_html_e( 'Run Backfill', 'dynamic-alt-tags' ); ?></button>
 			</form>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ai-alt-queue-process-form">
 					<input type="hidden" name="action" value="ai_alt_process_now_queue" />
 					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 					<button type="submit" class="button button-primary"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></button>
@@ -149,6 +149,11 @@ $is_no_alt    = 'no_alt' === $view;
 	</p>
 
 	<?php if ( ! $is_history && ! $is_no_alt ) : ?>
+		<div class="ai-alt-progress-wrap" id="ai-alt-queue-progress-wrap" hidden>
+			<div class="ai-alt-progress-bar" id="ai-alt-queue-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+		</div>
+		<p class="description" id="ai-alt-queue-progress-message" aria-live="polite"></p>
+
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ai-alt-queue-form">
 			<input type="hidden" name="action" value="ai_alt_queue_action" />
 			<?php wp_nonce_field( 'ai_alt_queue_action', 'ai_alt_queue_nonce' ); ?>
@@ -157,8 +162,8 @@ $is_no_alt    = 'no_alt' === $view;
 					<label class="screen-reader-text" for="bulk-action-selector-top"><?php esc_html_e( 'Select bulk action', 'dynamic-alt-tags' ); ?></label>
 					<select name="bulk_action" id="bulk-action-selector-top">
 						<option value="-1"><?php esc_html_e( 'Bulk actions', 'dynamic-alt-tags' ); ?></option>
+						<option value="process"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></option>
 						<option value="approve"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></option>
-						<option value="reject"><?php esc_html_e( 'Reject', 'dynamic-alt-tags' ); ?></option>
 						<option value="skip"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></option>
 					</select>
 					<button type="submit" class="button action"><?php esc_html_e( 'Apply', 'dynamic-alt-tags' ); ?></button>
@@ -219,8 +224,8 @@ $is_no_alt    = 'no_alt' === $view;
 				<label class="screen-reader-text" for="bulk-action-selector-bottom"><?php esc_html_e( 'Select bulk action', 'dynamic-alt-tags' ); ?></label>
 				<select name="bulk_action2" id="bulk-action-selector-bottom">
 					<option value="-1"><?php esc_html_e( 'Bulk actions', 'dynamic-alt-tags' ); ?></option>
+					<option value="process"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></option>
 					<option value="approve"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></option>
-					<option value="reject"><?php esc_html_e( 'Reject', 'dynamic-alt-tags' ); ?></option>
 					<option value="skip"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></option>
 				</select>
 				<button type="submit" class="button action"><?php esc_html_e( 'Apply', 'dynamic-alt-tags' ); ?></button>
