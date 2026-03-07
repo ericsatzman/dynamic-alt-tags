@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $notice = isset( $_GET['notice'] ) ? sanitize_key( wp_unslash( $_GET['notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-$active_tab = 'settings';
+$active_tab = 'metrics';
 if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial', 'process_error', 'provider_test' ), true ) ) {
 	$active_tab = 'tools';
 } elseif ( 'metrics_reset' === $notice ) {

@@ -306,14 +306,6 @@
 		}
 
 		var initialTab = String(container.getAttribute('data-default-tab') || availableTabs[0]);
-		try {
-			var storedTab = window.sessionStorage.getItem('aiAltSettingsTab');
-			if (storedTab && availableTabs.indexOf(storedTab) !== -1) {
-				initialTab = storedTab;
-			}
-		} catch (e) {
-			// Ignore sessionStorage availability errors.
-		}
 
 		if (availableTabs.indexOf(initialTab) === -1) {
 			initialTab = availableTabs[0];

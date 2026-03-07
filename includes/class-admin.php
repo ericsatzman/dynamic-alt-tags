@@ -171,12 +171,23 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		$status       = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
-		$view         = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'active';
-		$view         = in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
+		$view         = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'dashboard';
+		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt' ), true ) ? $view : 'dashboard';
 		$page         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		$per_page     = 20;
-		$data         = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+		if ( 'dashboard' === $view ) {
+			$data = array(
+				'total'    => 0,
+				'page'     => $page,
+				'per_page' => $per_page,
+				'rows'     => array(),
+			);
+		} else {
+			$data = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+		}
 		$total_images = $this->queue_repo->get_total_no_alt_images();
+		$metrics      = $this->settings->get_metrics();
+		$coverage     = $this->queue_repo->get_image_alt_coverage_counts();
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-queue.php';
 	}
@@ -227,6 +238,7 @@ class WPAI_Alt_Text_Admin {
 				'page'     => 'ai-alt-text-queue',
 				'notice'   => 'queue_backfill_done',
 				'enqueued' => $count,
+				'view'     => 'active',
 			),
 			admin_url( 'upload.php' )
 		);
@@ -300,6 +312,7 @@ class WPAI_Alt_Text_Admin {
 					'page'      => 'ai-alt-text-queue',
 					'notice'    => 'queue_batch_done',
 					'processed' => $processed,
+					'view'      => 'active',
 				),
 				admin_url( 'upload.php' )
 			);
@@ -310,6 +323,7 @@ class WPAI_Alt_Text_Admin {
 					'page'      => 'ai-alt-text-queue',
 					'notice'    => 'queue_error',
 					'queue_msg' => rawurlencode( $message ),
+					'view'      => 'active',
 				),
 				admin_url( 'upload.php' )
 			);
@@ -506,7 +520,7 @@ class WPAI_Alt_Text_Admin {
 	 * @return void
 	 */
 	public function handle_settings_metrics_ajax() {
-		if ( ! $this->current_user_can_view_settings() ) {
+		if ( ! $this->current_user_can_view_settings() && ! $this->current_user_can_view_queue() ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
@@ -554,8 +568,6 @@ class WPAI_Alt_Text_Admin {
 			}
 			$thumb         = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
 			$image_url     = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
-			$existing_alt  = $attachment_id ? get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) : '';
-			$existing_alt  = is_string( $existing_alt ) ? trim( $existing_alt ) : '';
 			?>
 			<tr>
 				<?php if ( ! $is_history ) : ?>
@@ -580,13 +592,9 @@ class WPAI_Alt_Text_Admin {
 				<?php if ( ! $is_history ) : ?>
 					<td class="ai-alt-row-confidence"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
 				<?php endif; ?>
-				<td>
-					<?php if ( $is_history ) : ?>
-						<?php echo '' !== trim( $display_alt ) ? esc_html( $display_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?>
-					<?php else : ?>
-						<?php echo '' !== $existing_alt ? esc_html( $existing_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?>
-					<?php endif; ?>
-				</td>
+				<?php if ( $is_history ) : ?>
+					<td><?php echo '' !== trim( $display_alt ) ? esc_html( $display_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?></td>
+				<?php endif; ?>
 				<td>
 					<?php if ( $is_history ) : ?>
 						<?php echo '' !== $processed_on ? esc_html( $processed_on ) : '-'; ?>
@@ -936,7 +944,7 @@ class WPAI_Alt_Text_Admin {
 		$allowed_actions = array( 'approve', 'reject', 'skip', 'process', 'requeue' );
 		$updated_count   = 0;
 		$return_view     = isset( $_POST['return_view'] ) ? sanitize_key( wp_unslash( $_POST['return_view'] ) ) : '';
-		$return_view     = in_array( $return_view, array( 'active', 'history', 'no_alt' ), true ) ? $return_view : '';
+		$return_view     = in_array( $return_view, array( 'dashboard', 'active', 'history', 'no_alt' ), true ) ? $return_view : '';
 
 		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
 		if ( '' !== $single_action ) {
