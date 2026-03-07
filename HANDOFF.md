@@ -12,23 +12,23 @@ Repository:
 - Plugin directory is the git root.
 
 Current git state:
-- Working tree expected clean after latest push.
+- Working tree clean after latest push.
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `0dc114d` - Prevent false upload-action errors after successful media apply
+- `abe6302` - Polish admin UI and add history re-queue action
 
 Recent commits (newest first):
-1. `0dc114d` Prevent false upload-action errors after successful media apply
-2. `c4430de` Stabilize media grid sidebar alt/title field syncing
-3. `c9607e0` Improve media-library generate apply reliability and title sync UI
-4. `0c417ec` Refine queue refresh behavior and harden alt-text truncation
-5. `7f40f76` Hide queue progress inline errors and rely on top alerts
-6. `a5bea33` Add queue-page processing progress and update bulk actions
-7. `f9bc653` Add top Refresh button to queue page actions
-8. `cdd210a` Trim cut-off alt text to complete sentences
-9. `4d71e2f` Clarify Worker URL and token instructions
-10. `e60efd6` Remove separate user guide document
+1. `abe6302` Polish admin UI and add history re-queue action
+2. `394320d` Refine admin motif for settings and queue pages
+3. `2ba6d6f` Improve queue alt-text display and settings/admin UI polish
+4. `4c4b5a7` Refine settings tabs, live metrics refresh, and access role UX
+5. `b67bcae` Add settings metrics dashboard and reset action
+6. `63a019e` Refresh handoff with current state and optimization roadmap
+7. `0dc114d` Prevent false upload-action errors after successful media apply
+8. `c4430de` Stabilize media grid sidebar alt/title field syncing
+9. `c9607e0` Improve media-library generate apply reliability and title sync UI
+10. `0c417ec` Refine queue refresh behavior and harden alt-text truncation
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -49,10 +49,10 @@ Access split by page type:
 
 ### Queue page access (Media > Dynamic Alt Tags)
 - Administrator always has access.
-- Additional roles can be granted queue access via Settings role checkboxes.
+- Additional roles can be granted queue access via Access tab role checkboxes.
 
 ### Additional permission hardening
-- Queue/media actions now also enforce per-attachment capability checks (`edit_post`) before modifying attachment metadata/title.
+- Queue/media actions enforce per-attachment capability checks (`edit_post`) before modifying attachment metadata/title.
 - Attachment upload-action AJAX validates capability + nonce.
 
 ### Where this is enforced
@@ -66,6 +66,12 @@ Access split by page type:
 
 ## 4) Settings Page - Current Behavior
 Settings are rendered by `includes/class-settings.php` and `admin/views-page-settings.php`.
+
+### Settings page tabs
+- `Dashboard` (formerly Metrics)
+- `Settings`
+- `Tools`
+- `Access`
 
 ### Current fields
 - Cloudflare Worker URL
@@ -83,16 +89,34 @@ Settings are rendered by `includes/class-settings.php` and `admin/views-page-set
 ### Token behavior
 - If Cloudflare API Token field is saved empty, stored token is cleared.
 
-### Access Control section
-- Separate section: `Access Control`
-- Role checkboxes sorted alphabetically by display name.
+### Access tab behavior
+- Roles are sorted alphabetically by display name.
+- Administrator is enforced as always selected (backend sanitize enforcement + UI lock/recheck behavior).
 - Description clarifies:
   - Administrator always full access
   - Selected roles get queue page access under Media
 
-### Save notice behavior
-- Settings save alert shows once at top.
-- Duplicate custom “Settings saved” block removed.
+### Dashboard tab behavior
+- Shows:
+  - Images on site
+  - Images with alt tags
+  - Images without alt tags
+  - Total images processed
+  - Success/failure counts
+  - Avg/last processing time
+  - Avg/last provider latency
+  - Last processed at
+- Includes `Reset Metrics` action.
+- Metrics update live via AJAX every 15s (and on tab open/visibility return), no reload required.
+
+### Tools tab behavior
+- `Run Backfill`
+- `Process Queue Now`
+- `Test Provider Connection`
+- Provider connection status panel (notice-based).
+
+### Redirect behavior fixes
+- Settings-page actions now redirect to `options-general.php?page=ai-alt-text-settings` (avoids "Sorry, you are not allowed to access this page" after tools actions).
 
 ## 5) Queue Page - Current Behavior
 Queue page template: `admin/views-page-queue.php`
@@ -106,14 +130,13 @@ Queue page template: `admin/views-page-queue.php`
 - Image
 - Status
 - Confidence
-- Existing Alt
-- Suggested Alt
+- Existing Alt Text
+- Suggested Alt Text
 - Actions
 
 ### History columns
 - Image
 - Status
-- Confidence
 - Alt Text
 - Processed On (uses WP General Settings date/time format)
 - Actions
@@ -124,14 +147,18 @@ Queue page template: `admin/views-page-queue.php`
 - Queue Status
 - Actions
 
-### Buttons and labels
-- Active row buttons: `Approve`, `Skip Image`, `Generate Alt Text`, `View Image`
-- Top process button text: `Generate Alt Text`
-- Top refresh button (blue): `Refresh`
+### Actions and labels
+- Active row actions: `Approve`, `Skip Image`, `Generate Alt Text`, `View Image`
+- History row actions: `Re-queue`, `View Image`
+- Top actions: `Run Backfill`, `Generate Alt Text`, `Refresh`
 
 ### Bulk actions
-- Current bulk options include: `Generate Alt Text`, `Approve`, `Skip Image`
-- `Reject` removed from bulk dropdowns.
+- Order now: `Approve`, `Skip Image`, `Generate Alt Text`
+- `Reject` is not in bulk dropdown.
+
+### Suggested Alt Text field behavior
+- Rendered as autosizing textarea in Active Queue rows so full suggestions are visible.
+- Autosize applies to initial page load and AJAX-loaded/updated rows.
 
 ### Progress UI
 - Queue-level progress bar appears below “Total queue items” and above bulk actions.
@@ -141,16 +168,28 @@ Queue page template: `admin/views-page-queue.php`
 - Inline top progress error text suppressed; errors surface in top alert notices.
 
 ### Refresh behavior
-- `Refresh` uses a clean queue URL (keeps only page/view/status/paged) to prevent stale alert params from reappearing.
+- `Refresh` uses clean queue URL args (page/view/status/paged) to avoid stale alerts.
 
 ### Thumbnail behavior
 - Thumbnails are clickable and open image URL in a new tab.
 
 ### Responsiveness
 - Mobile/tablet (`max-width: 782px`) responsive overrides in `assets/admin.css`.
-- Queue rows rendered as stacked card-like blocks on smaller screens.
+- Queue rows render stacked on smaller screens.
 
-## 6) Attachment Details (Media Modal) - Current Behavior
+## 6) Admin UI Motif (New)
+### Settings motif
+- Scoped to settings page wrapper class: `ai-alt-settings-page`
+- Slate/nav style tabs + light content cards + updated form controls and buttons.
+- Dashboard cards and metrics table styled consistently within motif.
+
+### Queue motif
+- Scoped to queue page wrapper class: `ai-alt-queue-page`
+- Unified queue header bar (`ai-alt-queue-header-bar`) containing tabs and top actions.
+- Tab strip and action buttons harmonized in same motif language.
+- Approve buttons on queue rows use the same dark blue/slate family as the queue tab background.
+
+## 7) Attachment Details (Media Modal) - Current Behavior
 Implemented in `includes/class-plugin.php` and `assets/admin.js`.
 
 ### UI
@@ -164,16 +203,16 @@ Implemented in `includes/class-plugin.php` and `assets/admin.js`.
 - If status `approved` or `rejected`: requires requeue from Queue page
 
 ### Reliability fixes for Media Library grid/right-sidebar
-- Frontend now updates both:
+- Frontend updates both:
   - DOM fields (Alt/Text and Title if sync enabled)
   - `wp.media` model state for selected attachment
 - Reapplies updates after short delays to survive async sidebar re-renders.
 - Prevents false “Unable to apply upload action” messages after successful apply.
 
 ### Alt/title sync behavior
-- Wherever alt text is applied, title sync follows setting `sync_title_from_alt` (default on).
+- Wherever alt text is applied, title sync follows `sync_title_from_alt` (default on).
 
-## 7) Alt Text Truncation Behavior
+## 8) Alt Text Truncation Behavior
 Implemented in `includes/class-alt-generator.php`.
 
 - Normalization trims likely cut-off endings.
@@ -181,36 +220,36 @@ Implemented in `includes/class-alt-generator.php`.
 - Trims dangling connectors/partial clause tails (e.g., trailing “and a”).
 - Appends terminal punctuation when needed.
 
-## 8) Upload/New Image Behavior
+## 9) Upload/New Image Behavior
 ### New uploads
 - Option: `auto_apply_new_uploads` (default off)
 - If enabled, newly uploaded image suggestion is auto-approved/applied.
 
-## 9) Provider/Runtime Notes
+## 10) Provider/Runtime Notes
 - Cloudflare Worker URL historically used: `https://alt-text-generator.webprod.workers.dev/`
 - URL mode can fail for local/private URLs (e.g., `sandbox.local`)
 - Direct upload mode is default/recommended
 - Provider timeout currently: 90 seconds
 - Error messaging includes more context where available
 
-## 10) Cron/Scheduling Notes
+## 11) Cron/Scheduling Notes
 - Plugin schedules queue processing on `five_minutes` cadence.
 - Existing non-`five_minutes` schedules are migrated on init.
 
-## 11) CI / Quality Tooling
+## 12) CI / Quality Tooling
 ### GitHub Actions
 - Workflow: PHPCS + Composer audit
 
 ### Local checks
-- PHPCS command:
+- PHPCS:
   - `composer -d /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
-## 12) Documentation Status
-- Primary WordPress readme: `readme.txt` (WordPress readme format)
+## 13) Documentation Status
+- Primary WordPress readme: `readme.txt`
 - Styled Markdown readme: `README.md`
 - `USER-GUIDE.md` removed
 
-## 13) Key Files (Start Here)
+## 14) Key Files (Start Here)
 - `dynamic-alt-tags.php`
 - `includes/class-plugin.php`
 - `includes/class-admin.php`
@@ -225,40 +264,11 @@ Implemented in `includes/class-alt-generator.php`.
 - `readme.txt`
 - `README.md`
 
-## 14) Known Constraints / Open Risks
+## 15) Known Constraints / Open Risks
 1. Queue mobile UX is improved but still table-derived HTML; semantic card markup would be a deeper refactor.
 2. Provider remains external dependency (availability/latency risk).
-3. Queue access still role-list based in settings model (not full capability mapping strategy).
+3. Queue access remains role-list based in settings model (not full capability mapping).
 4. Media modal behavior depends on WP media-frame internals and can be sensitive to admin/plugin conflicts.
-
-## 15) Optimization Roadmap (Potential Performance/Efficiency Improvements)
-### Quick wins (1-3 days)
-1. Add in-request caching for repeated option/row lookups.
-2. Skip redundant processing paths earlier (`generated` guard, retry cooldown).
-3. Add exponential backoff + retry cap for failed rows.
-4. Add lightweight metrics logging (latency, success/failure counts).
-
-### Near-term (1-2 weeks)
-1. Bounded parallel queue processing (e.g., 3-8 jobs concurrently).
-2. Circuit breaker when provider is degraded.
-3. DB/query tuning + index validation for hot paths.
-4. Smarter retry lifecycle using next-attempt eligibility.
-5. Direct-upload payload optimization (optional pre-resize/compress).
-
-### Strategic (2-6 weeks)
-1. Batch provider endpoint support (multiple images/request).
-2. Result dedup/cache by image hash.
-3. Migrate heavy queue execution to Action Scheduler-style job runner.
-4. Add operator metrics dashboard (drain rate, p95 latency, failure taxonomy).
-
-### Suggested execution order
-1. Backoff/cooldown guards.
-2. Metrics instrumentation.
-3. Parallelism + circuit breaker.
-4. DB/index tuning.
-5. Payload optimization.
-6. Batch API + hash cache.
-7. Async job runner migration.
 
 ## 16) Suggested Next Steps
 1. Add integration tests for:
@@ -276,13 +286,15 @@ Implemented in `includes/class-alt-generator.php`.
 - `composer -d /Users/local-esatzman/Desktop/Sites/sandbox/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
 3. Validate core flows in WP admin:
-- Settings page visible only for administrators
-- Queue page visible for admin + checked roles
-- Queue top + bulk `Generate Alt Text` progress bar behavior
-- Attachment Details `Generate Alt Text` behavior in list and grid/sidebar media views
-- Alert notices clear correctly after refresh
+- Settings page admin-only access.
+- Queue page visibility for admin + selected roles.
+- Dashboard metrics live refresh updates.
+- Settings tools actions redirect correctly (no access error).
+- Queue tabs and top action header render and align correctly.
+- History row `Re-queue` action returns items to Active Queue.
+- Attachment Details `Generate Alt Text` behavior in list and grid/sidebar media views.
 
-4. If access or apply bugs appear:
-- Start with `includes/class-settings.php` access methods
-- Then `includes/class-admin.php` + `includes/class-plugin.php`
-- For grid/sidebar sync issues, inspect `assets/admin.js` media model sync helpers
+4. If access/apply bugs appear:
+- Start with `includes/class-settings.php` access methods.
+- Then `includes/class-admin.php` + `includes/class-plugin.php`.
+- For media grid/sidebar sync issues, inspect `assets/admin.js` media model sync helpers.
