@@ -189,6 +189,18 @@
 		customWrap.style.display = isCustom ? 'block' : 'none';
 	}
 
+	function autoSizeSuggestedAltTextareas(scope) {
+		var root = (scope instanceof HTMLElement || scope instanceof Document) ? scope : document;
+		var nodes = root.querySelectorAll('textarea.ai-alt-row-suggested');
+		nodes.forEach(function (node) {
+			if (!(node instanceof HTMLTextAreaElement)) {
+				return;
+			}
+			node.style.height = 'auto';
+			node.style.height = Math.max(node.scrollHeight, 52) + 'px';
+		});
+	}
+
 	function hideUploadActionHint(select) {
 		if (!(select instanceof HTMLSelectElement)) {
 			return;
@@ -677,6 +689,9 @@
 				}
 				if ((suggestedInput instanceof HTMLInputElement || suggestedInput instanceof HTMLTextAreaElement) && payload.data && typeof payload.data.suggested_alt !== 'undefined') {
 					suggestedInput.value = String(payload.data.suggested_alt || '');
+					if (suggestedInput instanceof HTMLTextAreaElement) {
+						autoSizeSuggestedAltTextareas(suggestedInput.closest('tr') || row);
+					}
 				}
 				scheduleClearRowProcessFeedback();
 			})
@@ -745,6 +760,7 @@
 				}
 
 				tbody.insertAdjacentHTML('beforeend', payload.data.html);
+				autoSizeSuggestedAltTextareas(tbody);
 
 				var hasMore = Boolean(payload.data.has_more);
 				var newNextPage = Number(payload.data.next_page || (nextPage + 1));
@@ -939,6 +955,10 @@
 
 	document.addEventListener('change', function (event) {
 		var target = event.target;
+		if (target instanceof HTMLTextAreaElement && target.classList.contains('ai-alt-row-suggested')) {
+			autoSizeSuggestedAltTextareas(target.closest('tr') || target);
+			return;
+		}
 		if (target instanceof HTMLInputElement && target.classList.contains('ai-alt-admin-role-lock')) {
 			target.checked = true;
 			return;
@@ -990,6 +1010,7 @@
 			placeRetrieveButtons();
 			initSettingsTabs();
 			initSettingsMetricsRefresh();
+			autoSizeSuggestedAltTextareas(document);
 			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
 			lockedAdminRoleCheckboxes.forEach(function (checkbox) {
 				if (checkbox instanceof HTMLInputElement) {

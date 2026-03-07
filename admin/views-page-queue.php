@@ -205,8 +205,8 @@ if ( $page_num > 1 ) {
 				<?php else : ?>
 					<th><?php esc_html_e( 'Status', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Confidence', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Existing Alt', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Suggested Alt', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Existing Alt Text', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Suggested Alt Text', 'dynamic-alt-tags' ); ?></th>
 					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
 				<?php endif; ?>
 			</tr>

@@ -541,6 +541,8 @@ class WPAI_Alt_Text_Admin {
 			$suggested     = isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
 			$final_alt     = isset( $row['final_alt'] ) ? (string) $row['final_alt'] : '';
 			$display_alt   = $is_history && '' !== trim( $final_alt ) ? $final_alt : $suggested;
+			$display_alt_lines = max( 2, substr_count( wordwrap( $display_alt, 64, "\n", true ), "\n" ) + 1 );
+			$display_alt_rows  = min( 16, $display_alt_lines );
 			$processed_on  = '';
 			if ( isset( $row['updated_at'] ) && '' !== trim( (string) $row['updated_at'] ) ) {
 				try {
@@ -587,7 +589,7 @@ class WPAI_Alt_Text_Admin {
 					<?php if ( $is_history ) : ?>
 						<?php echo '' !== $processed_on ? esc_html( $processed_on ) : '-'; ?>
 					<?php else : ?>
-						<input type="text" class="regular-text ai-alt-row-suggested" name="bulk_final_alt[<?php echo esc_attr( (string) $row_id ); ?>]" value="<?php echo esc_attr( $display_alt ); ?>" />
+						<textarea class="regular-text ai-alt-row-suggested" name="bulk_final_alt[<?php echo esc_attr( (string) $row_id ); ?>]" rows="<?php echo esc_attr( (string) $display_alt_rows ); ?>"><?php echo esc_textarea( $display_alt ); ?></textarea>
 					<?php endif; ?>
 				</td>
 					<td>

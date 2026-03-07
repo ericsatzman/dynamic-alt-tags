@@ -23,6 +23,15 @@
 	max-width: 420px;
 }
 
+.ai-alt-wrap .ai-alt-table textarea.ai-alt-row-suggested {
+	width: 100%;
+	max-width: 420px;
+	min-height: 52px;
+	border-color: #2271b1;
+	resize: none;
+	overflow-y: hidden;
+}
+
 .ai-alt-wrap .ai-alt-progress-wrap {
 	width: 100%;
 	max-width: 320px;
@@ -134,7 +143,7 @@
 
 .ai-alt-wrap .ai-alt-metric-card {
 	background: #fff;
-	border: 1px solid #dcdcde;
+	border: 1px solid #2271b1;
 	border-radius: 6px;
 	padding: 10px 12px;
 }
@@ -156,6 +165,7 @@
 .ai-alt-wrap .ai-alt-metrics-table {
 	max-width: 900px;
 	margin: 0 0 18px;
+	border: 1px solid #2271b1;
 }
 
 .ai-alt-wrap .ai-alt-metrics-reset-form {
@@ -240,6 +250,12 @@
 	}
 
 	.ai-alt-wrap .ai-alt-table input[type="text"] {
+		min-width: 0;
+		width: 100%;
+		max-width: none;
+	}
+
+	.ai-alt-wrap .ai-alt-table textarea.ai-alt-row-suggested {
 		min-width: 0;
 		width: 100%;
 		max-width: none;
