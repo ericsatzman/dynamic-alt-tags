@@ -20,6 +20,16 @@ $status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
 $view         = isset( $view ) && in_array( $view, array( 'active', 'history', 'no_alt' ), true ) ? $view : 'active';
 $is_history   = 'history' === $view;
 $is_no_alt    = 'no_alt' === $view;
+$refresh_args = array(
+	'page' => 'ai-alt-text-queue',
+	'view' => $view,
+);
+if ( '' !== $status ) {
+	$refresh_args['status'] = $status;
+}
+if ( $page_num > 1 ) {
+	$refresh_args['paged'] = $page_num;
+}
 ?>
 <div class="wrap ai-alt-wrap">
 	<h1><?php esc_html_e( 'Dynamic Alt Tags', 'dynamic-alt-tags' ); ?></h1>
@@ -35,7 +45,7 @@ $is_no_alt    = 'no_alt' === $view;
 					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 					<button type="submit" class="button button-primary"><?php esc_html_e( 'Generate Alt Text', 'dynamic-alt-tags' ); ?></button>
 				</form>
-				<a class="button button-primary" href="<?php echo esc_url( add_query_arg( array() ) ); ?>"><?php esc_html_e( 'Refresh', 'dynamic-alt-tags' ); ?></a>
+				<a class="button button-primary" href="<?php echo esc_url( add_query_arg( $refresh_args, admin_url( 'upload.php' ) ) ); ?>"><?php esc_html_e( 'Refresh', 'dynamic-alt-tags' ); ?></a>
 			</div>
 	<?php endif; ?>
 

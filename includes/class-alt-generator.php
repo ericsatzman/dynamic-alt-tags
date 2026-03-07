@@ -116,6 +116,38 @@ class WPAI_Alt_Text_Generator {
 			}
 		}
 
+		$tokens = preg_split( '/\s+/', $text );
+		if ( is_array( $tokens ) && count( $tokens ) > 4 ) {
+			$trim_words = array( 'and', 'or', 'with', 'without', 'to', 'for', 'from', 'in', 'on', 'at', 'by', 'of', 'the', 'a', 'an' );
+			$clause_words = array( 'and', 'or', 'with', 'including', 'featuring', 'showing' );
+
+			while ( count( $tokens ) > 4 ) {
+				$last_index   = count( $tokens ) - 1;
+				$second_index = count( $tokens ) - 2;
+				$last_word    = strtolower( trim( (string) $tokens[ $last_index ], " \t\n\r\0\x0B,;:-" ) );
+				$second_word  = $second_index >= 0 ? strtolower( trim( (string) $tokens[ $second_index ], " \t\n\r\0\x0B,;:-" ) ) : '';
+
+				if ( in_array( $last_word, $trim_words, true ) ) {
+					array_pop( $tokens );
+					continue;
+				}
+
+				if ( '' !== $second_word && in_array( $second_word, $clause_words, true ) ) {
+					array_pop( $tokens );
+					array_pop( $tokens );
+					continue;
+				}
+
+				break;
+			}
+
+			$text = trim( implode( ' ', $tokens ) );
+			$text = rtrim( $text, " \t\n\r\0\x0B,;:-" );
+			if ( '' === $text ) {
+				return '';
+			}
+		}
+
 		if ( '' !== $text && ! preg_match( '/[.!?]["\')\]]*$/', $text ) ) {
 			$text .= '.';
 		}

@@ -714,7 +714,9 @@
 				'test_status',
 				'test_msg',
 				'queue_msg',
-				'process_msg'
+				'process_msg',
+				'settings-updated',
+				'_wp_http_referer'
 			];
 			var changed = false;
 			noticeParams.forEach(function (key) {
