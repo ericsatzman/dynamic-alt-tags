@@ -17,10 +17,12 @@ $max_pages    = max( 1, (int) ceil( $total / $per_page ) );
 $has_more     = $page_num < $max_pages;
 $total_images = isset( $total_images ) ? absint( $total_images ) : 0;
 $status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
-$view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt' ), true ) ? $view : 'dashboard';
+$view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search' ), true ) ? $view : 'dashboard';
 $is_dashboard = 'dashboard' === $view;
 $is_history   = 'history' === $view;
 $is_no_alt    = 'no_alt' === $view;
+$is_search    = 'search' === $view;
+$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search;
 $refresh_args = array(
 	'page' => 'ai-alt-text-queue',
 	'view' => $view,
@@ -75,7 +77,7 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'Dashboard', 'dynamic-alt-tags' ); ?></a>
-			<a class="nav-tab <?php echo ! $is_dashboard && ! $is_history && ! $is_no_alt ? 'nav-tab-active' : ''; ?>" href="
+			<a class="nav-tab <?php echo $is_active ? 'nav-tab-active' : ''; ?>" href="
 			<?php
 			echo esc_url(
 				add_query_arg(
@@ -114,8 +116,21 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
+			<a class="nav-tab <?php echo $is_search ? 'nav-tab-active' : ''; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'search',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'Search', 'dynamic-alt-tags' ); ?></a>
 		</h2>
-		<?php if ( ! $is_dashboard && ! $is_history && ! $is_no_alt ) : ?>
+		<?php if ( $is_active ) : ?>
 			<div class="ai-alt-queue-process-top">
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="ai_alt_run_backfill_queue" />
@@ -194,6 +209,8 @@ if ( '' !== $last_processed_at ) {
 				echo esc_html( sprintf( __( 'Total history items: %d', 'dynamic-alt-tags' ), $total ) );
 			} elseif ( $is_no_alt ) {
 				echo esc_html( sprintf( __( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total ) );
+			} elseif ( $is_search ) {
+				esc_html_e( 'Search images by title, filename, alt text, or attachment ID.', 'dynamic-alt-tags' );
 			} else {
 				echo esc_html( sprintf( __( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images ) );
 			}
@@ -258,6 +275,29 @@ if ( '' !== $last_processed_at ) {
 				</tbody>
 			</table>
 		</div>
+
+	<?php elseif ( $is_search ) : ?>
+		<div class="ai-alt-search-controls">
+			<label class="screen-reader-text" for="ai-alt-media-search-input"><?php esc_html_e( 'Search media library', 'dynamic-alt-tags' ); ?></label>
+			<input type="search" id="ai-alt-media-search-input" class="regular-text ai-alt-search-input" placeholder="<?php echo esc_attr__( 'Search by name, filename, alt text, or ID...', 'dynamic-alt-tags' ); ?>" autocomplete="off" />
+		</div>
+		<p class="description" id="ai-alt-media-search-summary"><?php esc_html_e( 'Type at least 2 characters to search.', 'dynamic-alt-tags' ); ?></p>
+		<table class="widefat striped ai-alt-table ai-alt-search-table" data-view="search">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Image', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Name', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'File', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Alt Text', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Queue Status', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Last Updated', 'dynamic-alt-tags' ); ?></th>
+					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
+				</tr>
+			</thead>
+			<tbody id="ai-alt-search-results">
+				<tr><td colspan="7"><?php esc_html_e( 'No matching images found.', 'dynamic-alt-tags' ); ?></td></tr>
+			</tbody>
+		</table>
 
 	<?php else : ?>
 		<?php if ( ! $is_history && ! $is_no_alt ) : ?>

@@ -775,6 +775,93 @@
 			});
 	}
 
+
+	function initQueueMediaSearch() {
+		var input = document.getElementById('ai-alt-media-search-input');
+		var tbody = document.getElementById('ai-alt-search-results');
+		var summary = document.getElementById('ai-alt-media-search-summary');
+		if (!(input instanceof HTMLInputElement) || !(tbody instanceof HTMLTableSectionElement) || !(summary instanceof HTMLElement)) {
+			return;
+		}
+
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.queueSearchNonce === 'string' ? adminData.queueSearchNonce : '';
+		if (!ajaxUrl || !nonce) {
+			return;
+		}
+
+		var debounceTimer = null;
+		var requestSerial = 0;
+		var minimumLength = 2;
+
+		function setPlaceholderRow(message) {
+			tbody.innerHTML = '<tr><td colspan="7">' + String(message || '') + '</td></tr>';
+		}
+
+		function searchMedia(query) {
+			requestSerial += 1;
+			var requestId = requestSerial;
+			var trimmed = String(query || '').trim();
+
+			if (trimmed.length < minimumLength) {
+				summary.textContent = i18n.searchPrompt || 'Type at least 2 characters to search.';
+				setPlaceholderRow(i18n.searchNoResults || 'No matching images found.');
+				return;
+			}
+
+			summary.textContent = i18n.searchLoading || 'Searching media library...';
+			var body = new URLSearchParams();
+			body.append('action', 'ai_alt_queue_search_ajax');
+			body.append('_ajax_nonce', nonce);
+			body.append('query', trimmed);
+
+			fetch(ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+				},
+				body: body.toString()
+			})
+				.then(function (response) {
+					return response.json();
+				})
+				.then(function (payload) {
+					if (requestId !== requestSerial) {
+						return;
+					}
+					if (!payload || payload.success !== true || !payload.data || typeof payload.data.html !== 'string') {
+						throw new Error(i18n.searchError || 'Unable to search media library. Please try again.');
+					}
+					tbody.innerHTML = payload.data.html;
+					var count = Number(payload.data.count || 0) || 0;
+					if (count > 0) {
+						summary.textContent = 'Found ' + count + ' result' + (count === 1 ? '' : 's') + ' for "' + trimmed + '".';
+						return;
+					}
+					summary.textContent = i18n.searchNoResults || 'No matching images found.';
+				})
+				.catch(function () {
+					if (requestId !== requestSerial) {
+						return;
+					}
+					summary.textContent = i18n.searchError || 'Unable to search media library. Please try again.';
+					setPlaceholderRow(i18n.searchNoResults || 'No matching images found.');
+				});
+		}
+
+		input.addEventListener('input', function () {
+			if (debounceTimer) {
+				window.clearTimeout(debounceTimer);
+			}
+			debounceTimer = window.setTimeout(function () {
+				searchMedia(input.value);
+			}, 280);
+		});
+	}
+
 	function addNoAltImageToQueue(trigger) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -1002,6 +1089,7 @@
 			placeRetrieveButtons();
 			initSettingsTabs();
 			initSettingsMetricsRefresh();
+			initQueueMediaSearch();
 			autoSizeSuggestedAltTextareas(document);
 			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
 			lockedAdminRoleCheckboxes.forEach(function (checkbox) {

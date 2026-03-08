@@ -118,6 +118,7 @@ class WPAI_Alt_Text_Admin {
 				'queueProcessNonce'  => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 				'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 				'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
+				'queueSearchNonce' => wp_create_nonce( 'ai_alt_queue_search_ajax' ),
 				'settingsMetricsNonce' => wp_create_nonce( 'ai_alt_settings_metrics_ajax' ),
 				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
 				'syncTitleFromAlt'   => ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] ),
@@ -131,6 +132,10 @@ class WPAI_Alt_Text_Admin {
 					'rowError'           => __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
 					'loadingMore'        => __( 'Loading more...', 'dynamic-alt-tags' ),
 					'loadMoreError'      => __( 'Unable to load more items. Please try again.', 'dynamic-alt-tags' ),
+					'searchLoading'      => __( 'Searching media library...', 'dynamic-alt-tags' ),
+					'searchError'        => __( 'Unable to search media library. Please try again.', 'dynamic-alt-tags' ),
+					'searchPrompt'       => __( 'Type at least 2 characters to search.', 'dynamic-alt-tags' ),
+					'searchNoResults'    => __( 'No matching images found.', 'dynamic-alt-tags' ),
 					'queueAddSuccess'    => __( 'Added to queue', 'dynamic-alt-tags' ),
 					'queueAddError'      => __( 'Unable to add image to queue.', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
@@ -172,10 +177,10 @@ class WPAI_Alt_Text_Admin {
 
 		$status       = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
 		$view         = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'dashboard';
-		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt' ), true ) ? $view : 'dashboard';
+		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search' ), true ) ? $view : 'dashboard';
 		$page         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		$per_page     = 20;
-		if ( 'dashboard' === $view ) {
+		if ( 'dashboard' === $view || 'search' === $view ) {
 			$data = array(
 				'total'    => 0,
 				'page'     => $page,
@@ -536,6 +541,208 @@ class WPAI_Alt_Text_Admin {
 				'fields' => $this->get_settings_metrics_fields(),
 			)
 		);
+	}
+
+
+	/**
+	 * Search media attachments for queue search tab.
+	 *
+	 * @return void
+	 */
+	public function handle_queue_search_ajax() {
+		if ( ! $this->current_user_can_view_queue() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) ), 403 );
+		}
+
+		check_ajax_referer( 'ai_alt_queue_search_ajax' );
+
+		$query   = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
+		$results = $this->search_media_attachments( $query, 20 );
+		$html    = $this->render_search_rows_html( $results );
+
+		wp_send_json_success(
+			array(
+				'html'  => $html,
+				'count' => count( $results ),
+			)
+		);
+	}
+
+	/**
+	 * Query media attachments by text, filename, alt text, or ID.
+	 *
+	 * @param string $query Query string.
+	 * @param int    $limit Result limit.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function search_media_attachments( $query, $limit = 20 ) {
+		$query = trim( (string) $query );
+		$limit = max( 1, min( 100, absint( $limit ) ) );
+		if ( '' === $query || strlen( $query ) < 2 ) {
+			return array();
+		}
+
+		$ids = array();
+
+		$title_ids = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image',
+				'post_status'    => 'inherit',
+				'fields'         => 'ids',
+				'posts_per_page' => $limit,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				's'              => $query,
+			)
+		);
+		if ( is_array( $title_ids ) ) {
+			$ids = array_merge( $ids, array_map( 'absint', $title_ids ) );
+		}
+
+		$meta_ids = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image',
+				'post_status'    => 'inherit',
+				'fields'         => 'ids',
+				'posts_per_page' => $limit,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					'relation' => 'OR',
+					array(
+						'key'     => '_wp_attachment_image_alt', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+						'value'   => $query,
+						'compare' => 'LIKE',
+					),
+					array(
+						'key'     => '_wp_attached_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+						'value'   => $query,
+						'compare' => 'LIKE',
+					),
+				),
+			)
+		);
+		if ( is_array( $meta_ids ) ) {
+			$ids = array_merge( $ids, array_map( 'absint', $meta_ids ) );
+		}
+
+		if ( ctype_digit( $query ) ) {
+			$candidate_id = absint( $query );
+			if ( $candidate_id > 0 && wp_attachment_is_image( $candidate_id ) ) {
+				$ids[] = $candidate_id;
+			}
+		}
+
+		$ids = array_values( array_unique( array_filter( $ids ) ) );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+		$ids = array_slice( $ids, 0, $limit );
+
+		$results = array();
+		foreach ( $ids as $attachment_id ) {
+			if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+				continue;
+			}
+
+			$attachment = get_post( $attachment_id );
+			if ( ! ( $attachment instanceof WP_Post ) || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $attachment_id ) ) {
+				continue;
+			}
+
+			$file_path = get_attached_file( $attachment_id );
+			$filename  = is_string( $file_path ) && '' !== $file_path ? wp_basename( $file_path ) : '';
+			$alt_text  = (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+			$queue_row = $this->queue_repo->get_row_by_attachment( $attachment_id );
+
+			$results[] = array(
+				'attachment_id' => $attachment_id,
+				'title'         => get_the_title( $attachment_id ),
+				'filename'      => $filename,
+				'alt_text'      => $alt_text,
+				'image_url'     => wp_get_attachment_url( $attachment_id ),
+				'thumb_html'    => wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ),
+				'queue_row_id'  => is_array( $queue_row ) && isset( $queue_row['id'] ) ? absint( $queue_row['id'] ) : 0,
+				'queue_status'  => is_array( $queue_row ) && isset( $queue_row['status'] ) ? sanitize_key( (string) $queue_row['status'] ) : 'not_queued',
+				'updated_at'    => is_array( $queue_row ) && isset( $queue_row['updated_at'] ) ? sanitize_text_field( (string) $queue_row['updated_at'] ) : '',
+			);
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Render media search rows.
+	 *
+	 * @param array<int,array<string,mixed>> $results Results.
+	 * @return string
+	 */
+	private function render_search_rows_html( $results ) {
+		if ( empty( $results ) ) {
+			return '<tr><td colspan="7">' . esc_html__( 'No matching images found.', 'dynamic-alt-tags' ) . '</td></tr>';
+		}
+
+		ob_start();
+		foreach ( $results as $result ) {
+			$attachment_id = isset( $result['attachment_id'] ) ? absint( $result['attachment_id'] ) : 0;
+			$title         = isset( $result['title'] ) ? sanitize_text_field( (string) $result['title'] ) : '';
+			$filename      = isset( $result['filename'] ) ? sanitize_text_field( (string) $result['filename'] ) : '';
+			$alt_text      = isset( $result['alt_text'] ) ? sanitize_text_field( (string) $result['alt_text'] ) : '';
+			$queue_status  = isset( $result['queue_status'] ) ? sanitize_key( (string) $result['queue_status'] ) : 'not_queued';
+			$queue_row_id  = isset( $result['queue_row_id'] ) ? absint( $result['queue_row_id'] ) : 0;
+			$updated_at    = isset( $result['updated_at'] ) ? sanitize_text_field( (string) $result['updated_at'] ) : '';
+			$thumb_html    = isset( $result['thumb_html'] ) ? (string) $result['thumb_html'] : '';
+			$image_url     = isset( $result['image_url'] ) ? esc_url_raw( (string) $result['image_url'] ) : '';
+			$is_active_status = in_array( $queue_status, array( 'queued', 'processing', 'generated', 'failed' ), true );
+			$queue_button_label = __( 'Add to Queue', 'dynamic-alt-tags' );
+			if ( '' !== $queue_status && ! $is_active_status && 'not_queued' !== $queue_status ) {
+				$queue_button_label = __( 'Requeue', 'dynamic-alt-tags' );
+			} elseif ( $is_active_status ) {
+				$queue_button_label = __( 'Queued', 'dynamic-alt-tags' );
+			}
+
+			$updated_display = '';
+			if ( '' !== $updated_at ) {
+				try {
+					$updated_dt      = new DateTime( $updated_at, wp_timezone() );
+					$updated_display = $updated_dt->format( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) . ' T' );
+				} catch ( Exception $e ) {
+					$updated_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $updated_at, false );
+				}
+			}
+			?>
+			<tr>
+				<td>
+					<?php if ( '' !== $thumb_html ) : ?>
+						<?php if ( '' !== $image_url ) : ?>
+							<a href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo wp_kses_post( $thumb_html ); ?></a>
+						<?php else : ?>
+							<?php echo wp_kses_post( $thumb_html ); ?>
+						<?php endif; ?>
+					<?php else : ?>
+						<?php esc_html_e( 'N/A', 'dynamic-alt-tags' ); ?>
+					<?php endif; ?>
+				</td>
+				<td>
+					<strong><?php echo '' !== $title ? esc_html( $title ) : esc_html__( '(Untitled)', 'dynamic-alt-tags' ); ?></strong>
+					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
+				</td>
+				<td><?php echo '' !== $filename ? esc_html( $filename ) : '-'; ?></td>
+				<td><?php echo '' !== trim( $alt_text ) ? esc_html( $alt_text ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?></td>
+				<td><code class="ai-alt-search-status"><?php echo esc_html( $queue_status ); ?></code></td>
+				<td><?php echo '' !== $updated_display ? esc_html( $updated_display ) : '-'; ?></td>
+				<td>
+					<button class="button ai-alt-add-no-alt" type="button" data-attachment-id="<?php echo esc_attr( (string) $attachment_id ); ?>" <?php echo $is_active_status ? 'disabled' : ''; ?>><?php echo esc_html( $queue_button_label ); ?></button>
+					<?php if ( '' !== $image_url ) : ?>
+						<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<?php
+		}
+		return (string) ob_get_clean();
 	}
 
 	/**
@@ -944,7 +1151,7 @@ class WPAI_Alt_Text_Admin {
 		$allowed_actions = array( 'approve', 'reject', 'skip', 'process', 'requeue' );
 		$updated_count   = 0;
 		$return_view     = isset( $_POST['return_view'] ) ? sanitize_key( wp_unslash( $_POST['return_view'] ) ) : '';
-		$return_view     = in_array( $return_view, array( 'dashboard', 'active', 'history', 'no_alt' ), true ) ? $return_view : '';
+		$return_view     = in_array( $return_view, array( 'dashboard', 'active', 'history', 'no_alt', 'search' ), true ) ? $return_view : '';
 
 		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
 		if ( '' !== $single_action ) {
